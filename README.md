@@ -4,7 +4,7 @@ A collection of Solidity smart contract projects built with Hardhat, designed fo
 
 **Author:** Peile Wu  
 **Email:** peile.wu.1990@gmail.com  
-**Last Updated:** October 19, 2025
+**Last Updated:** October 20, 2025
 
 ---
 
@@ -20,7 +20,7 @@ This repository contains multiple Hardhat projects exploring different aspects o
 
 A foundational Hardhat project demonstrating contract creation, compilation, and deployment. Deploy a simple smart contract to Hardhat's local network and Sepolia testnet.
 
-**More Details:** [hh_ss_fcc/README.md](./hh_ss_fcc/Hardhat_SimpleStorage_FreeCode.md)
+**More Details:** [hh_ss_fcc/README.md](./hh_ss_fcc/hh_ss_fcc.md)
 
 ---
 

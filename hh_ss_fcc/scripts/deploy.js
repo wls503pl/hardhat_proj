@@ -10,6 +10,15 @@ async function main() {
   await simpleStorage.waitForDeployment();
 
   console.log(`Deployed contract to: ${simpleStorage.target}`);
+
+  const currentValue = await simpleStorage.retrieve();
+  console.log(`currentValue is: ${currentValue}`);
+
+  // Update current value
+  const transactionResponse = await simpleStorage.store(88888);
+  await transactionResponse.wait(1);
+  const updateValue = await simpleStorage.retrieve();
+  console.log(`updateValue is: ${updateValue}`);
 }
 
 // call main
