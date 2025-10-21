@@ -2,11 +2,22 @@
 
 **Author:** Peile Wu  
 **Email:** peile.wu.1990@gmail.com  
-**Date:** October 20, 2025
+**Date:** October 21, 2025
 
 ---
 
-A beginner-friendly Solidity smart contract project built with Hardhat. This project demonstrates how to create, compile, deploy, and verify smart contracts on both local and testnet environments.
+A beginner-friendly Solidity smart contract project built with Hardhat. This project demonstrates how to create, compile, deploy, and verify smart contracts on both local and testnet environments, as well as creating custom Hardhat tasks.
+
+---
+
+## Table of Contents
+
+- [Part 1: Basic Setup and Deployment](#part-1-basic-setup-and-deployment)
+- [Part 2: Custom Hardhat Tasks](#part-2-custom-hardhat-tasks)
+
+---
+
+# Part 1: Basic Setup and Deployment
 
 ## Project Overview
 
@@ -28,9 +39,10 @@ HH_SS_FCC/
 ├── cache/                  # Hardhat cache directory
 ├── contracts/
 │   └── SimpleStorage.sol   # Main smart contract
-├── img/                    # Project screenshots
 ├── scripts/
 │   └── deploy.js           # Contract deployment script
+├── tasks/
+│   └── block-number.js     # Custom Hardhat task
 ├── test/                   # Test files directory
 ├── .env                    # Environment variables (not included in repo)
 ├── .gitignore              # Git ignore rules
@@ -62,8 +74,6 @@ cd HH_SS_FCC
 yarn install
 ```
 
-**Setup with Yarn:**
-
 ![yarn_init](img/yarn_init.png)
 
 3. Compile contracts:
@@ -72,11 +82,7 @@ yarn install
 yarn hardhat compile
 ```
 
-**Create Hardhat Project:**
-
 ![hardhat_project_choose](img/hardhat_project_choose.png)
-
-**Edit Contract:**
 
 ![edit_contract](img/edit_contract.png)
 
@@ -99,8 +105,6 @@ yarn hardhat run scripts/deploy.js
 ```
 
 ### Sepolia Testnet Deployment
-
-To deploy on Sepolia testnet, follow these steps:
 
 1. Create a `.env` file in the project root:
 
@@ -128,27 +132,6 @@ yarn hardhat run scripts/deploy.js --network sepolia
 
 ⚠️ **Security Warning**: Never commit your `.env` file to version control. The private key should only be used with test wallets containing minimal funds.
 
-## Smart Contract Details
-
-### SimpleStorage.sol
-
-A foundational smart contract demonstrating core Solidity concepts:
-
-**State Variables:**
-
-- `favoriteNumber`: Stores a uint256 value
-- `nameTofavoriteNumber`: Mapping from name to favorite number
-- `people`: Array of People structs
-
-**Key Functions:**
-
-- `store(uint256)`: Updates the favorite number
-- `retrieve()`: Retrieves the current favorite number
-- `add()`: Pure function demonstrating basic math
-- `addPerson(string, uint256)`: Adds a person to the people array
-
-**Solidity Version:** 0.8.28
-
 ## Deployment
 
 ### Local Network
@@ -163,236 +146,55 @@ yarn hardhat run scripts/deploy.js
 yarn hardhat run scripts/deploy.js --network sepolia
 ```
 
-**Deployment Example:**
-
 ![contract_deployed](img/contract_deployed.png)
-
-**View on Sepolia Etherscan:**
 
 ![sepolia_etherscan](img/sepolia_etherscan.png)
 
-### Contract Interaction on Hardhat
-
-**Retrieve and Update Values:**
-
-```javascript
-const { ethers, run, network } = require("hardhat");
-
-async function main() {
-  const SimpleStorageFactory = await ethers.getContractFactory("SimpleStorage");
-  const simpleStorage = await SimpleStorageFactory.deploy();
-  await simpleStorage.waitForDeployment();
-
-  console.log(`Deployed contract to: ${simpleStorage.target}`);
-
-  // Get initial value (default is 5)
-  const currentValue = await simpleStorage.retrieve();
-  console.log(`currentValue is: ${currentValue}`);
-
-  // Update value
-  const transactionResponse = await simpleStorage.store(88888);
-  await transactionResponse.wait(1);
-
-  const updateValue = await simpleStorage.retrieve();
-  console.log(`updateValue is: ${updateValue}`);
-}
-
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
-```
-
-**Hardhat Network Output:**
+### Contract Interaction
 
 ![contract_interact_hardhat](img/contract_interact_hardhat.png)
 
-**Sepolia Testnet Output:**
-
 ![contract_interact_sepolia](img/contract_interact_sepolia.png)
-
-**Verify on Chain:**
 
 ![contract_interact_onchain](img/contract_interact_onchain.png)
 
-## Contract Verification Guide
+## Contract Verification
 
-### Overview
-
-Contract verification is crucial for transparency and security. It allows users to view and audit your contract source code directly on blockchain explorers like Etherscan.
-
-### Correct hardhat.config.js Configuration
-
-```javascript
-require("@nomicfoundation/hardhat-toolbox");
-require("dotenv").config();
-
-const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
-
-/** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
-  defaultNetwork: "hardhat",
-  networks: {
-    sepolia: {
-      url: SEPOLIA_RPC_URL,
-      accounts: [PRIVATE_KEY],
-      chainId: 11155111,
-    },
-  },
-  solidity: "0.8.28",
-  etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
-  },
-};
-```
+### Configuration
 
 **Key Points:**
 
-- `etherscan` configuration must be at the same level as `networks` and `solidity` (not nested inside `networks`)
+- `etherscan` configuration must be at the same level as `networks` and `solidity`
 - `etherscan` only requires `apiKey`, **NOT** `url`
 - Use environment variables for all sensitive information
 
-### Common Configuration Errors
-
-#### Error 1: etherscan nested inside networks
-
-```javascript
-// ❌ WRONG
-networks: {
-  sepolia: { ... },
-  etherscan: {  // This is incorrect!
-    apiKey: { ... }
-  }
-}
-```
-
-**Error Message:**
-
-```
-Invalid value undefined for HardhatConfig.networks.etherscan.url - Expected a value of type string.
-```
-
-**Fix:** Move `etherscan` outside of `networks`
-
-#### Error 2: Missing etherscan configuration
-
-**Error Message:**
-
-```
-HH306: The 'address' parameter of task 'verify:etherscan' expects a value, but none was passed.
-```
-
-**Fix:** Add `etherscan` configuration with your API key
-
-#### Error 3: Network connection timeout
-
-**Error Message:**
-
-```
-A network request failed. This is an error from the block explorer, not Hardhat. Error: Connect Timeout Error
-```
-
-**Cause:** Network connectivity issues (common in mainland China due to Etherscan firewall restrictions)
-
-**Solutions:**
-
-- Use VPN/proxy to access Etherscan
-- Use web-based manual verification (recommended for mainland China)
-- Retry after some time
-
-### Method 1: CLI Automatic Verification (Recommended for stable networks)
-
-**Basic verification:**
+### CLI Verification
 
 ```bash
-yarn hardhat verify --network sepolia 0xd9eaaad0ff703d533014dad93f85db804243f2f3
+yarn hardhat verify --network sepolia <contract_address>
 ```
 
-**Verification with constructor arguments:**
-
-```bash
-yarn hardhat verify --network sepolia 0xd9eaaad0ff703d533014dad93f85db804243f2f3 "arg1" "arg2"
-```
-
-**With detailed output:**
-
-```bash
-yarn hardhat verify --network sepolia 0xd9eaaad0ff703d533014dad93f85db804243f2f3 --verbose
-```
-
-### Method 2: Web-Based Manual Verification (Recommended for mainland China)
-
-**Steps:**
+### Web-Based Verification (Recommended for mainland China)
 
 1. Visit https://sepolia.etherscan.io
-2. Search for your contract address: `0xd9eaaad0ff703d533014dad93f85db804243f2f3`
-3. Navigate to the contract page
-4. Click the **"Contract"** tab
-5. Click **"Verify and Publish"** button
-6. Select **Single File** or **Multi File** (usually Single File)
-7. Choose Solidity Version: `0.8.28`
-8. Set optimization settings to match your compilation
-9. Copy your contract source code from `contracts/SimpleStorage.sol`
-10. Paste into the code field
-11. Complete CAPTCHA
-12. Click **"Verify and Publish"**
-
-**Advantages:**
-
-- Works reliably even with poor Etherscan connectivity
-- No CLI dependency
-- Immediate visual feedback
-- Easier to debug
+2. Search for your contract address
+3. Click the **"Contract"** tab → **"Verify and Publish"**
+4. Select **Single File**, choose Solidity Version: `0.8.28`
+5. Copy your contract source code and paste
+6. Complete CAPTCHA and click **"Verify and Publish"**
 
 ### Obtaining Etherscan API Key
 
-**Important:** Etherscan API keys are **network-agnostic**. An API key created on mainnet can be used for all testnets (Sepolia, Goerli, etc.)
-
-**Steps:**
+**Important:** Etherscan API keys are **network-agnostic**. An API key created on mainnet can be used for all testnets.
 
 1. Visit https://etherscan.io/apis
-2. Log in to your Etherscan account (or create one)
+2. Log in to your Etherscan account
 3. Click **"Create API Key"**
-4. Name it (e.g., "HH_SS_FCC")
-5. Copy the API key
-6. Add it to your `.env` file:
+4. Copy the API key and add to `.env`:
 
 ```env
-ETHERSCAN_API_KEY=your_api_key_here
-```
-
-### Verification Configuration Best Practices
-
-**Environment Variables (.env):**
-
-```env
-# Network Configuration
-SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
-PRIVATE_KEY=your_private_key_here
-
-# Verification Configuration
 ETHERSCAN_API_KEY=your_etherscan_api_key_here
 ```
-
-**Git Security:**
-
-```
-# .gitignore
-.env
-.env.local
-```
-
-### Verification Status Check
-
-After verification, you can:
-
-1. View your contract on Sepolia Etherscan
-2. Click the **"Contract"** tab to see the verified source code
-3. Users can now read and audit your contract directly on Etherscan
 
 ## Available Scripts
 
@@ -427,21 +229,6 @@ yarn hardhat help
 - **dotenv**: Environment variable management (v17.2.3)
 - **@nomicfoundation/hardhat-toolbox**: Hardhat toolbox integration
 
-## Dependencies
-
-```json
-{
-  "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^6.0.0",
-    "@nomicfoundation/hardhat-verify": "^2.0.0",
-    "@nomiclabs/hardhat-etherscan": "^3.1.8",
-    "hardhat": "2.26.3",
-    "ethers": "^6.4.0",
-    "dotenv": "^17.2.3"
-  }
-}
-```
-
 ## Chain IDs Reference
 
 | Network         | Chain ID | RPC Endpoint                              |
@@ -450,59 +237,119 @@ yarn hardhat help
 | Hardhat Local   | 31337    | http://localhost:8545                     |
 | Mainnet         | 1        | https://mainnet.infura.io/v3/{PROJECT_ID} |
 
-## Useful Resources
+---
 
-- [Hardhat Documentation](https://hardhat.org/docs)
-- [Hardhat Verify Plugin](https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify)
-- [Solidity Documentation](https://docs.soliditylang.org/)
-- [Sepolia Etherscan](https://sepolia.etherscan.io/)
-- [Etherscan API Documentation](https://docs.etherscan.io/)
-- [Chainlist](https://chainlist.org/) - RPC endpoints and chain IDs
-- [Infura](https://infura.io/) - RPC provider
-- [Alchemy](https://www.alchemy.com/) - RPC provider
+# Part 2: Custom Hardhat Tasks
 
-## Troubleshooting
+## Overview
 
-| Issue                     | Solution                                  |
-| ------------------------- | ----------------------------------------- |
-| "Connect Timeout Error"   | Use VPN or manual web verification        |
-| "Invalid value undefined" | Check etherscan is not nested in networks |
-| "API key not found"       | Add ETHERSCAN_API_KEY to .env file        |
-| "Already verified"        | Contract is already verified on Etherscan |
-| "Address not found"       | Verify the contract address is correct    |
+Hardhat allows you to extend its functionality by creating custom tasks. Custom tasks are reusable scripts that can be executed directly from the command line.
 
-## Learning Journey
+## View Built-in Tasks
 
-This project takes you through:
+```bash
+yarn hardhat
+```
 
-1. ✅ Setting up Hardhat environment
-2. ✅ Writing simple Solidity contracts
-3. ✅ Compiling contracts
-4. ✅ Deploying to local Hardhat network
-5. ✅ Deploying to Sepolia testnet
-6. ✅ Interacting with contracts via ethers.js
-7. ✅ Verifying contracts on Etherscan
-8. ✅ Viewing verified contracts on blockchain explorers
+![Hardhat Built-in Tasks](img/custom_hardhat_tasks/hardhat_task.png)
 
-## Next Steps
+## Creating a Custom Task
 
-- [ ] Deploy your own version to Sepolia testnet
-- [ ] Verify your contract using CLI method
-- [ ] Verify your contract using web method
-- [ ] View verified contract on Sepolia Etherscan
-- [ ] Extend SimpleStorage with additional functionality
-- [ ] Deploy to other testnets (Goerli, Mumbai, etc.)
-- [ ] Explore hardhat testing framework
+### Step 1: Create Task File
 
-## License
+Create `tasks/block-number.js`:
 
-MIT
+```javascript
+const { task } = require("hardhat/config");
+
+task("block-number", "Prints the current block number").setAction(
+  async (taskArgs, hre) => {
+    const blockNumber = await hre.ethers.provider.getBlockNumber();
+    console.log(`Current block number is: ${blockNumber}`);
+  }
+);
+```
+
+**Key Concepts:**
+
+- **task()**: Defines a new Hardhat task
+- **setAction()**: Specifies the execution function
+- **hre**: Hardhat Runtime Environment, provides access to ethers and network utilities
+
+### Step 2: Import in hardhat.config.js
+
+Add at the top of `hardhat.config.js`:
+
+```javascript
+require("./tasks/block-number");
+```
+
+![Add Task in Config](img/custom_hardhat_tasks/addTask_inConfig.png)
+
+### Step 3: Verify Task Added
+
+```bash
+yarn hardhat
+```
+
+![Task Newly Added](img/custom_hardhat_tasks/task_newly_added.png)
+
+### Step 4: Run the Task
+
+```bash
+yarn hardhat block-number
+```
+
+![Run Task Get Block Number](img/custom_hardhat_tasks/runTask_getBlockNumber.png)
+
+## Running on Different Networks
+
+```bash
+# Local network
+yarn hardhat block-number
+
+# Sepolia testnet
+yarn hardhat block-number --network sepolia
+```
+
+## Advanced Features
+
+### Adding Parameters
+
+```javascript
+task("block-number", "Prints the current block number")
+  .addParam("display", "Display format")
+  .setAction(async (taskArgs, hre) => {
+    const blockNumber = await hre.ethers.provider.getBlockNumber();
+
+    if (taskArgs.display === "json") {
+      console.log(JSON.stringify({ blockNumber }));
+    } else {
+      console.log(`Current block number is: ${blockNumber}`);
+    }
+  });
+```
+
+**Usage:**
+
+```bash
+yarn hardhat block-number --display json
+```
+
+## Benefits
+
+- **Reusability**: Write once, use anywhere
+- **Automation**: Automate repetitive workflows
+- **Efficiency**: Save time with CLI shortcuts
+
+## Common Use Cases
+
+- Checking blockchain state (block number, gas price, etc.)
+- Querying contract data
+- Managing accounts and balances
+- Automating deployment steps
 
 ---
 
-This project is for educational purposes. Always use test wallets and testnet funds when learning and experimenting with smart contracts. **Never expose your private keys or commit sensitive information to version control.**
-
----
-
-**Last Updated:** October 20, 2025  
+**Last Updated:** October 21, 2025  
 **Tested with:** Hardhat v2.26.3, Node.js v14+, Solidity v0.8.28
