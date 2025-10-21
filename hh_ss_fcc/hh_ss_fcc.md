@@ -14,6 +14,7 @@ A beginner-friendly Solidity smart contract project built with Hardhat. This pro
 
 - [Part 1: Basic Setup and Deployment](#part-1-basic-setup-and-deployment)
 - [Part 2: Custom Hardhat Tasks](#part-2-custom-hardhat-tasks)
+- [Part 3: Local Node Development](#part-3-local-node-development)
 
 ---
 
@@ -44,6 +45,10 @@ HH_SS_FCC/
 ├── tasks/
 │   └── block-number.js     # Custom Hardhat task
 ├── test/                   # Test files directory
+├── img/                    # Screenshots directory
+│   ├── custom_hardhat_tasks/
+│   ├── hardhat_localnode/
+│   └── hardhat_run/
 ├── .env                    # Environment variables (not included in repo)
 ├── .gitignore              # Git ignore rules
 ├── hardhat.config.js       # Hardhat configuration
@@ -82,9 +87,9 @@ yarn install
 yarn hardhat compile
 ```
 
-![hardhat_project_choose](img/hardhat_project_choose.png)
+![hardhat_project_choose](img/hardhat_run/hardhat_project_choose.png)
 
-![edit_contract](img/edit_contract.png)
+![edit_contract](img/hardhat_run/edit_contract.png)
 
 4. Check Hardhat version:
 
@@ -92,7 +97,7 @@ yarn hardhat compile
 npm view hardhat versions --json
 ```
 
-![hardhat_version](img/hardhat_version.png)
+![hardhat_version](img/hardhat_run/hardhat_version.png)
 
 ## Configuration
 
@@ -122,7 +127,7 @@ ETHERSCAN_API_KEY=your_etherscan_api_key_here
 
 3. Configure hardhat.config.js to include Sepolia network settings:
 
-![add_sepolia_testnet](img/add_sepolia_testnet.png)
+![add_sepolia_testnet](img/hardhat_run/add_sepolia_testnet.png)
 
 4. Deploy to Sepolia:
 
@@ -146,17 +151,17 @@ yarn hardhat run scripts/deploy.js
 yarn hardhat run scripts/deploy.js --network sepolia
 ```
 
-![contract_deployed](img/contract_deployed.png)
+![contract_deployed](img/hardhat_run/contract_deployed.png)
 
-![sepolia_etherscan](img/sepolia_etherscan.png)
+![sepolia_etherscan](img/hardhat_run/sepolia_etherscan.png)
 
 ### Contract Interaction
 
-![contract_interact_hardhat](img/contract_interact_hardhat.png)
+![contract_interact_hardhat](img/hardhat_run/contract_interact_hardhat.png)
 
-![contract_interact_sepolia](img/contract_interact_sepolia.png)
+![contract_interact_sepolia](img/hardhat_run/contract_interact_sepolia.png)
 
-![contract_interact_onchain](img/contract_interact_onchain.png)
+![contract_interact_onchain](img/hardhat_run/contract_interact_onchain.png)
 
 ## Contract Verification
 
@@ -348,6 +353,85 @@ yarn hardhat block-number --display json
 - Querying contract data
 - Managing accounts and balances
 - Automating deployment steps
+
+---
+
+# Part 3: Local Node Development
+
+## Overview
+
+Hardhat provides a local network node similar to Ganache but runs in the terminal without a UI. This allows you to run contracts locally with more control over the network environment.
+
+## Starting the Local Node
+
+Open a terminal and run:
+
+```bash
+yarn hardhat node
+```
+
+This command starts a local Hardhat network at `http://127.0.0.1:8545/` and displays several pre-funded accounts with their private keys.
+
+![run_hardhatLocalNode](img/hardhat_localnode/run_hardhatLocalNode.png)
+
+## Configuring localhost Network
+
+To interact with the running node, add a `localhost` network configuration to `hardhat.config.js`:
+
+```javascript
+module.exports = {
+  // ... other config
+  networks: {
+    sepolia: {
+      url: SEPOLIA_RPC_URL,
+      accounts: [PRIVATE_KEY],
+      chainId: 11155111,
+    },
+    localhost: {
+      url: "http://127.0.0.1:8545/",
+      // Accounts already provided by localhost
+      // Still use hardhat's chainId
+      chainId: 31337,
+    },
+  },
+  // ... rest of config
+};
+```
+
+**Key Points:**
+
+- Use chain ID `31337` for Hardhat's local network
+- Accounts are automatically provided by the local node
+- No need to specify private keys for localhost
+
+## Deploying to localhost
+
+In a second terminal window, deploy your contract to the localhost network:
+
+```bash
+yarn hardhat run .\scripts\deploy.js --network localhost
+```
+
+## Viewing Transaction Details
+
+The node window will display detailed transaction logs including:
+
+- Account addresses used
+- Contract addresses deployed
+- All interactions with contracts (function calls, state changes)
+- Gas usage and transaction details
+
+![interact_with_LocalNode](img/hardhat_localnode/interact_with_LocalNode.png)
+
+The deploy.js script performs the following operations: retrieve initial value → store new value → retrieve updated value, and all these transactions will be logged in the node window.
+
+## Benefits of Local Node Development
+
+- **Full Control**: Run a complete blockchain locally
+- **Debugging**: Detailed logs of all transactions
+- **Fast Testing**: Instant block confirmation
+- **Realistic Environment**: Mimics mainnet/testnet behavior without gas costs
+- **Account Management**: Pre-funded test accounts available
 
 ---
 
