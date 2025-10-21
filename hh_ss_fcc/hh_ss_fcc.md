@@ -14,7 +14,7 @@ A beginner-friendly Solidity smart contract project built with Hardhat. This pro
 
 - [Part 1: Basic Setup and Deployment](#part-1-basic-setup-and-deployment)
 - [Part 2: Custom Hardhat Tasks](#part-2-custom-hardhat-tasks)
-- [Part 3: Local Node Development](#part-3-local-node-development)
+- [Part 3: Local Development and Console](#part-3-local-development-and-console)
 
 ---
 
@@ -356,82 +356,106 @@ yarn hardhat block-number --display json
 
 ---
 
-# Part 3: Local Node Development
+# Part 3: Local Development and Console
 
-## Overview
+## Local Node Development
 
-Hardhat provides a local network node similar to Ganache but runs in the terminal without a UI. This allows you to run contracts locally with more control over the network environment.
+### Quick Start
 
-## Starting the Local Node
-
-Open a terminal and run:
+Terminal 1 - Start the local node:
 
 ```bash
 yarn hardhat node
 ```
 
-This command starts a local Hardhat network at `http://127.0.0.1:8545/` and displays several pre-funded accounts with their private keys.
-
-![run_hardhatLocalNode](img/hardhat_localnode/run_hardhatLocalNode.png)
-
-## Configuring localhost Network
-
-To interact with the running node, add a `localhost` network configuration to `hardhat.config.js`:
-
-```javascript
-module.exports = {
-  // ... other config
-  networks: {
-    sepolia: {
-      url: SEPOLIA_RPC_URL,
-      accounts: [PRIVATE_KEY],
-      chainId: 11155111,
-    },
-    localhost: {
-      url: "http://127.0.0.1:8545/",
-      // Accounts already provided by localhost
-      // Still use hardhat's chainId
-      chainId: 31337,
-    },
-  },
-  // ... rest of config
-};
-```
-
-**Key Points:**
-
-- Use chain ID `31337` for Hardhat's local network
-- Accounts are automatically provided by the local node
-- No need to specify private keys for localhost
-
-## Deploying to localhost
-
-In a second terminal window, deploy your contract to the localhost network:
+Terminal 2 - Deploy to localhost:
 
 ```bash
 yarn hardhat run .\scripts\deploy.js --network localhost
 ```
 
-## Viewing Transaction Details
+### Configuration
 
-The node window will display detailed transaction logs including:
+Add to `hardhat.config.js`:
 
-- Account addresses used
-- Contract addresses deployed
-- All interactions with contracts (function calls, state changes)
-- Gas usage and transaction details
+```javascript
+localhost: {
+  url: "http://127.0.0.1:8545/",
+  chainId: 31337,
+}
+```
 
-![interact_with_LocalNode](img/hardhat_localnode/interact_with_LocalNode.png)
+All transaction logs display in the node terminal.
 
-The deploy.js script performs the following operations: retrieve initial value → store new value → retrieve updated value, and all these transactions will be logged in the node window.
+![run_hardhatLocalNode](img/hardhat_console/run_hardhatLocalNode.png)
 
-## Benefits of Local Node Development
+![interact_with_LocalNode](img/hardhat_console/interact_with_LocalNode.png)
 
-- **Full Control**: Run a complete blockchain locally
-- **Debugging**: Detailed logs of all transactions
-- **Fast Testing**: Instant block confirmation
-- **Realistic Environment**: Mimics mainnet/testnet behavior without gas costs
-- **Account Management**: Pre-funded test accounts available
+---
+
+## Hardhat Console
+
+Interactive JavaScript environment with pre-loaded ethers.js utilities. No script files needed.
+
+### Console with localhost
+
+Terminal 1 - Start node:
+
+```bash
+yarn hardhat node
+```
+
+Terminal 2 - Enter console:
+
+```bash
+yarn hardhat console --network localhost
+```
+
+Deploy and interact directly:
+
+```javascript
+> const SimpleStorageFactory = await ethers.getContractFactory("SimpleStorage")
+> const simpleStorage = await SimpleStorageFactory.deploy()
+> await simpleStorage.retrieve()
+5n
+> await simpleStorage.store(666)
+> await simpleStorage.retrieve()
+666n
+```
+
+![hardhat_console](img/hardhat_console/hardhat_console.png)
+
+![instructions_inConsole](img/hardhat_console/instructions_inConsole.png)
+
+![console_deployed_contract](img/hardhat_console/console_deployed_contract.png)
+
+![console_change_defaultParameter](img/hardhat_console/console_change_defaultParameter.png)
+
+![console_transaction](img/hardhat_console/console_transaction.png)
+
+### Console with Hardhat Network
+
+Start ephemeral network (cleared on exit):
+
+```bash
+yarn hardhat console --network hardhat
+```
+
+Exit: `Ctrl + C` × 2
+
+![how_to_exit_hardhat_console](img/hardhat_console/how_to_exit_hardhat_console.png)
+
+### Console with Sepolia Testnet
+
+Query live testnet:
+
+```bash
+yarn hardhat console --network sepolia
+
+> await ethers.provider.getBlockNumber()
+```
+
+![console_get_sepolia_blockNumber](img/hardhat_console/console_get_sepolia_blockNumber.png)
 
 ---
 
