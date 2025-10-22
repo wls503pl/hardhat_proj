@@ -24,8 +24,10 @@ A foundational Hardhat project demonstrating the complete development workflow:
 - Custom Hardhat tasks
 - Hardhat Console for interactive development
 - Contract testing with Mocha/Chai framework
+- Gas analysis and code coverage measurement
 
-**Full Documentation:** [hh_ss_fcc.md](./hh_ss_fcc/hh_ss_fcc.md)
+**Full Documentation:** [hh_ss_fcc.md](./hh_ss_fcc/hh_ss_fcc.md)  
+**Testing Guide:** [hardhat_test.md](./hardhat_test.md)
 
 ---
 
@@ -53,15 +55,17 @@ yarn hardhat run scripts/deploy.js
 
 ## Core Commands
 
-| Command                                                | Purpose                   |
-| ------------------------------------------------------ | ------------------------- |
-| `yarn hardhat compile`                                 | Compile contracts         |
-| `yarn hardhat run scripts/deploy.js`                   | Deploy to local network   |
-| `yarn hardhat run scripts/deploy.js --network sepolia` | Deploy to Sepolia testnet |
-| `yarn hardhat test`                                    | Run test suite            |
-| `yarn hardhat node`                                    | Start local node          |
-| `yarn hardhat console --network localhost`             | Interactive console       |
-| `yarn hardhat verify --network sepolia <address>`      | Verify on Etherscan       |
+| Command                                                | Purpose                           |
+| ------------------------------------------------------ | --------------------------------- |
+| `yarn hardhat compile`                                 | Compile contracts                 |
+| `yarn hardhat run scripts/deploy.js`                   | Deploy to local network           |
+| `yarn hardhat run scripts/deploy.js --network sepolia` | Deploy to Sepolia testnet         |
+| `yarn hardhat test`                                    | Run test suite with gas reporting |
+| `yarn hardhat test --grep "keyword"`                   | Run specific tests                |
+| `yarn hardhat coverage`                                | Measure test coverage             |
+| `yarn hardhat node`                                    | Start local node                  |
+| `yarn hardhat console --network localhost`             | Interactive console               |
+| `yarn hardhat verify --network sepolia <address>`      | Verify on Etherscan               |
 
 ## Prerequisites
 
@@ -77,6 +81,7 @@ Create `.env` file for testnet deployment:
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
 PRIVATE_KEY=your_test_wallet_private_key
 ETHERSCAN_API_KEY=your_etherscan_api_key
+COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
 ```
 
 ⚠️ **Never commit `.env` files. Use test wallets with minimal funds only.**
@@ -95,7 +100,7 @@ hh_ss_fcc/
 ├── contracts/           # Smart contracts
 ├── scripts/             # Deployment scripts
 ├── tasks/               # Custom Hardhat tasks
-├── test/                # Test files
+├── test/                # Test files (Mocha/Chai)
 ├── hardhat.config.js    # Hardhat configuration
 ├── .env                 # Environment variables (not in repo)
 └── hh_ss_fcc.md         # Full project documentation
@@ -103,21 +108,51 @@ hh_ss_fcc/
 
 ## Security & Testing
 
-Testing is essential for smart contract security. This project includes comprehensive Mocha/Chai tests covering:
+Testing is essential for smart contract security. Smart contract code is publicly available on the blockchain and exposed to potential exploitation. Comprehensive testing is your first line of defense.
 
-- State initialization
-- Function behavior
-- Transaction handling
-- Edge cases
+### Running Tests
 
-Run tests with:
+Write tests in the `test/` directory using Mocha/Chai framework:
 
 ```bash
-yarn hardhat test
-yarn hardhat test --grep "keyword"
+yarn hardhat test                    # Run all tests
+yarn hardhat test --grep "keyword"   # Run specific tests
 ```
 
-For security best practices, see [hardhat_test.md](./hardhat_test.md)
+### Analyzing Performance
+
+**Gas Reporting:** See how much gas each function consumes:
+
+```bash
+yarn hardhat test  # Automatically displays gas usage
+```
+
+Configure gas reporting in `hardhat.config.js` with USD conversion using CoinMarketCap API.
+
+**Code Coverage:** Measure how much of your contract is tested:
+
+```bash
+yarn hardhat coverage  # Generate coverage report
+```
+
+Target 80-90% coverage for production contracts.
+
+### Test Best Practices
+
+- Use descriptive test names that explain what is being validated
+- Keep tests focused and atomic (one assertion per concept)
+- Use `beforeEach()` to avoid code duplication
+- Test edge cases and boundary conditions
+- Verify state changes correctly
+- Always convert BigNumber to strings before assertions
+
+For detailed testing guidance, see [hardhat_test.md](./hardhat_test.md), which includes:
+
+- Mocha/Chai framework concepts
+- Running tests with `--grep` and `.only` flags
+- Gas reporting configuration
+- Code coverage analysis
+- Learning from rekt.news security failures
 
 ## License
 
