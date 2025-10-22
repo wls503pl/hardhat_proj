@@ -4,7 +4,7 @@ A collection of Solidity smart contract projects built with Hardhat, designed fo
 
 **Author:** Peile Wu  
 **Email:** peile.wu.1990@gmail.com  
-**Last Updated:** October 20, 2025
+**Last Updated:** October 22, 2025
 
 ---
 
@@ -14,66 +14,110 @@ This repository contains multiple Hardhat projects exploring different aspects o
 
 ## Projects
 
-### Project 1: Hardhat_SimpleStorage
+### Project 1: Hardhat_SimpleStorage (hh_ss_fcc/)
 
-**Location:** `hh_ss_fcc/`
+A foundational Hardhat project demonstrating the complete development workflow:
 
-A foundational Hardhat project demonstrating contract creation, compilation, and deployment. Deploy a simple smart contract to Hardhat's local network and Sepolia testnet.
+- Contract creation, compilation, and deployment
+- Local development with Hardhat network
+- Sepolia testnet deployment and verification
+- Custom Hardhat tasks
+- Hardhat Console for interactive development
+- Contract testing with Mocha/Chai framework
 
-**More Details:** [hh_ss_fcc/README.md](./hh_ss_fcc/hh_ss_fcc.md)
+**Full Documentation:** [hh_ss_fcc.md](./hh_ss_fcc/hh_ss_fcc.md)
 
 ---
 
-## Getting Started
+## Quick Start
 
-1. Clone the repository:
+1. Clone and install:
 
 ```bash
 git clone https://github.com/your-username/hardhat_proj.git
-cd hardhat_proj
-```
-
-2. Navigate to a project:
-
-```bash
-cd hh_ss_fcc  # or any other project
-```
-
-3. Install dependencies:
-
-```bash
+cd hardhat_proj/hh_ss_fcc
 yarn install
 ```
 
-## General Commands
+2. Compile contracts:
 
 ```bash
-yarn hardhat compile           # Compile contracts
-yarn hardhat run scripts/deploy.js              # Deploy locally
-yarn hardhat run scripts/deploy.js --network sepolia  # Deploy to testnet
-yarn hardhat node              # Start local node
-yarn hardhat test              # Run tests
+yarn hardhat compile
 ```
+
+3. Deploy locally:
+
+```bash
+yarn hardhat run scripts/deploy.js
+```
+
+## Core Commands
+
+| Command                                                | Purpose                   |
+| ------------------------------------------------------ | ------------------------- |
+| `yarn hardhat compile`                                 | Compile contracts         |
+| `yarn hardhat run scripts/deploy.js`                   | Deploy to local network   |
+| `yarn hardhat run scripts/deploy.js --network sepolia` | Deploy to Sepolia testnet |
+| `yarn hardhat test`                                    | Run test suite            |
+| `yarn hardhat node`                                    | Start local node          |
+| `yarn hardhat console --network localhost`             | Interactive console       |
+| `yarn hardhat verify --network sepolia <address>`      | Verify on Etherscan       |
 
 ## Prerequisites
 
-- Node.js v22.10.0
-- Yarn v1.22.22
-- npm v10.9.0
-- Git v2.44.0.windows.1
+- Node.js: v22.10.0
+- Yarn: v1.22.22
+- Git: v2.44.0.windows.1
 
-## Useful Resources
+## Environment Setup
 
-- [Hardhat Docs](https://hardhat.org/docs)
-- [Solidity Docs](https://docs.soliditylang.org/)
+Create `.env` file for testnet deployment:
+
+```env
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+PRIVATE_KEY=your_test_wallet_private_key
+ETHERSCAN_API_KEY=your_etherscan_api_key
+```
+
+⚠️ **Never commit `.env` files. Use test wallets with minimal funds only.**
+
+## Key Resources
+
+- [Hardhat Documentation](https://hardhat.org/docs)
+- [Solidity Documentation](https://docs.soliditylang.org/)
 - [Sepolia Etherscan](https://sepolia.etherscan.io/)
 - [Chainlist](https://chainlist.org/)
 
-## Security Notes
+## Project Structure
 
-⚠️ Never commit `.env` files  
-⚠️ Use test wallets with minimal funds  
-⚠️ Keep private keys secure
+```
+hh_ss_fcc/
+├── contracts/           # Smart contracts
+├── scripts/             # Deployment scripts
+├── tasks/               # Custom Hardhat tasks
+├── test/                # Test files
+├── hardhat.config.js    # Hardhat configuration
+├── .env                 # Environment variables (not in repo)
+└── hh_ss_fcc.md         # Full project documentation
+```
+
+## Security & Testing
+
+Testing is essential for smart contract security. This project includes comprehensive Mocha/Chai tests covering:
+
+- State initialization
+- Function behavior
+- Transaction handling
+- Edge cases
+
+Run tests with:
+
+```bash
+yarn hardhat test
+yarn hardhat test --grep "keyword"
+```
+
+For security best practices, see [hardhat_test.md](./hardhat_test.md)
 
 ## License
 
@@ -81,4 +125,4 @@ MIT
 
 ---
 
-**Note:** For educational purposes. Always use testnet funds when learning.
+**Note:** For educational purposes. Always validate on testnet before mainnet deployment.
