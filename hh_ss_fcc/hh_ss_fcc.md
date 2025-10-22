@@ -12,9 +12,9 @@ A beginner-friendly Solidity smart contract project built with Hardhat. This pro
 
 ## Table of Contents
 
-- [Part 1: Basic Setup and Deployment](#part-1-basic-setup-and-deployment)
-- [Part 2: Custom Hardhat Tasks](#part-2-custom-hardhat-tasks)
-- [Part 3: Local Development and Console](#part-3-local-development-and-console)
+-   [Part 1: Basic Setup and Deployment](#part-1-basic-setup-and-deployment)
+-   [Part 2: Custom Hardhat Tasks](#part-2-custom-hardhat-tasks)
+-   [Part 3: Local Development and Console](#part-3-local-development-and-console)
 
 ---
 
@@ -26,11 +26,11 @@ This is an educational project showcasing the complete Hardhat development workf
 
 ### Key Features
 
-- **SimpleStorage Smart Contract**: A basic Solidity contract demonstrating state variables, mappings, and struct usage
-- **Local Development**: Deploy and test contracts on Hardhat's built-in local network
-- **Testnet Deployment**: Deploy contracts to Sepolia testnet with environment configuration
-- **Contract Verification**: Verify deployed contract code on Etherscan using both CLI and web interface
-- **Automated Deployment Scripts**: Ready-to-use deployment scripts for streamlined contract deployment
+-   **SimpleStorage Smart Contract**: A basic Solidity contract demonstrating state variables, mappings, and struct usage
+-   **Local Development**: Deploy and test contracts on Hardhat's built-in local network
+-   **Testnet Deployment**: Deploy contracts to Sepolia testnet with environment configuration
+-   **Contract Verification**: Verify deployed contract code on Etherscan using both CLI and web interface
+-   **Automated Deployment Scripts**: Ready-to-use deployment scripts for streamlined contract deployment
 
 ## Project Structure
 
@@ -59,10 +59,10 @@ HH_SS_FCC/
 
 ## Prerequisites
 
-- **Node.js**: v14 or higher
-- **Yarn**: Package manager (or npm)
-- **MetaMask or similar**: For testnet interactions (optional)
-- **Etherscan Account**: Required for contract verification
+-   **Node.js**: v14 or higher
+-   **Yarn**: Package manager (or npm)
+-   **MetaMask or similar**: For testnet interactions (optional)
+-   **Etherscan Account**: Required for contract verification
 
 ## Installation
 
@@ -121,9 +121,9 @@ ETHERSCAN_API_KEY=your_etherscan_api_key_here
 
 2. Obtain credentials:
 
-   - **RPC URL**: Get from [Infura](https://infura.io/) or [Alchemy](https://www.alchemy.com/)
-   - **Private Key**: Export from MetaMask (use a test wallet only)
-   - **Etherscan API Key**: Get from [Etherscan API Dashboard](https://etherscan.io/apis)
+    - **RPC URL**: Get from [Infura](https://infura.io/) or [Alchemy](https://www.alchemy.com/)
+    - **Private Key**: Export from MetaMask (use a test wallet only)
+    - **Etherscan API Key**: Get from [Etherscan API Dashboard](https://etherscan.io/apis)
 
 3. Configure hardhat.config.js to include Sepolia network settings:
 
@@ -169,9 +169,9 @@ yarn hardhat run scripts/deploy.js --network sepolia
 
 **Key Points:**
 
-- `etherscan` configuration must be at the same level as `networks` and `solidity`
-- `etherscan` only requires `apiKey`, **NOT** `url`
-- Use environment variables for all sensitive information
+-   `etherscan` configuration must be at the same level as `networks` and `solidity`
+-   `etherscan` only requires `apiKey`, **NOT** `url`
+-   Use environment variables for all sensitive information
 
 ### CLI Verification
 
@@ -228,11 +228,11 @@ yarn hardhat help
 
 ## Technologies Used
 
-- **Hardhat**: Ethereum development environment (v2.26.3)
-- **Solidity**: Smart contract language (v0.8.28)
-- **Ethers.js**: Ethereum library integration (v6.4.0)
-- **dotenv**: Environment variable management (v17.2.3)
-- **@nomicfoundation/hardhat-toolbox**: Hardhat toolbox integration
+-   **Hardhat**: Ethereum development environment (v2.26.3)
+-   **Solidity**: Smart contract language (v0.8.28)
+-   **Ethers.js**: Ethereum library integration (v6.4.0)
+-   **dotenv**: Environment variable management (v17.2.3)
+-   **@nomicfoundation/hardhat-toolbox**: Hardhat toolbox integration
 
 ## Chain IDs Reference
 
@@ -268,18 +268,18 @@ Create `tasks/block-number.js`:
 const { task } = require("hardhat/config");
 
 task("block-number", "Prints the current block number").setAction(
-  async (taskArgs, hre) => {
-    const blockNumber = await hre.ethers.provider.getBlockNumber();
-    console.log(`Current block number is: ${blockNumber}`);
-  }
+    async (taskArgs, hre) => {
+        const blockNumber = await hre.ethers.provider.getBlockNumber();
+        console.log(`Current block number is: ${blockNumber}`);
+    }
 );
 ```
 
 **Key Concepts:**
 
-- **task()**: Defines a new Hardhat task
-- **setAction()**: Specifies the execution function
-- **hre**: Hardhat Runtime Environment, provides access to ethers and network utilities
+-   **task()**: Defines a new Hardhat task
+-   **setAction()**: Specifies the execution function
+-   **hre**: Hardhat Runtime Environment, provides access to ethers and network utilities
 
 ### Step 2: Import in hardhat.config.js
 
@@ -323,16 +323,16 @@ yarn hardhat block-number --network sepolia
 
 ```javascript
 task("block-number", "Prints the current block number")
-  .addParam("display", "Display format")
-  .setAction(async (taskArgs, hre) => {
-    const blockNumber = await hre.ethers.provider.getBlockNumber();
+    .addParam("display", "Display format")
+    .setAction(async (taskArgs, hre) => {
+        const blockNumber = await hre.ethers.provider.getBlockNumber();
 
-    if (taskArgs.display === "json") {
-      console.log(JSON.stringify({ blockNumber }));
-    } else {
-      console.log(`Current block number is: ${blockNumber}`);
-    }
-  });
+        if (taskArgs.display === "json") {
+            console.log(JSON.stringify({ blockNumber }));
+        } else {
+            console.log(`Current block number is: ${blockNumber}`);
+        }
+    });
 ```
 
 **Usage:**
@@ -343,16 +343,16 @@ yarn hardhat block-number --display json
 
 ## Benefits
 
-- **Reusability**: Write once, use anywhere
-- **Automation**: Automate repetitive workflows
-- **Efficiency**: Save time with CLI shortcuts
+-   **Reusability**: Write once, use anywhere
+-   **Automation**: Automate repetitive workflows
+-   **Efficiency**: Save time with CLI shortcuts
 
 ## Common Use Cases
 
-- Checking blockchain state (block number, gas price, etc.)
-- Querying contract data
-- Managing accounts and balances
-- Automating deployment steps
+-   Checking blockchain state (block number, gas price, etc.)
+-   Querying contract data
+-   Managing accounts and balances
+-   Automating deployment steps
 
 ---
 
