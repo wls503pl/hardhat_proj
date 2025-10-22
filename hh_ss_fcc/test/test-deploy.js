@@ -21,7 +21,7 @@ describe("SimpleStorage", function () {
         assert.equal(currentValue.toString(), expectValue);
     });
 
-    it.only("Should update when we call store", async () => {
+    it("Should update when we call store", async () => {
         const expectValue = "618";
         const transactionResponse = await simpleStorage.store(expectValue);
         await transactionResponse.wait(1);
