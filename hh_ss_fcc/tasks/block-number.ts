@@ -1,10 +1,14 @@
-const { task } = require("hardhat/config");
+// const { task } = require("hardhat/config");
+import { task } from "hardhat/config";
 
 /*
  * Use the '.addParam' command to add different parameters to the task
  * Use 'setAction' to define the execution of the task
  */
-task("block-number", "Prints the current block number").setAction(
+export default task(
+    "block-number",
+    "Prints the current block number"
+).setAction(
     /*
      * Another syntax for defining a function in Javascript, defining a function without a name
      * .e.g: "const blockTask = async(.., params, ..) => {...}" equals "async function blockTask(...) {...}"

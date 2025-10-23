@@ -1,5 +1,6 @@
 // import
-const { ethers } = require("hardhat");
+// const { ethers } = require("hardhat");
+import { ethers } from "hardhat";
 
 // async main
 async function main() {
