@@ -4,78 +4,77 @@ A collection of Solidity smart contract projects built with Hardhat, designed fo
 
 **Author:** Peile Wu  
 **Email:** peile.wu.1990@gmail.com  
-**Last Updated:** October 22, 2025
+**Last Updated:** October 23, 2025
 
 ---
 
 ## Overview
 
-This repository contains multiple Hardhat projects exploring different aspects of smart contract development. Each project is self-contained with its own documentation and configuration.
+This repository contains educational Hardhat projects exploring different aspects of smart contract development. Each project is self-contained with comprehensive documentation organized in the `README.md/` directory.
 
-## Projects
+---
 
-### Project 1: Hardhat_SimpleStorage (hh_ss_fcc/)
+## Project 1: Hardhat_SimpleStorage (hh_ss_fcc/)
 
-A foundational Hardhat project demonstrating the complete development workflow:
+A foundational project demonstrating the complete development workflow with full TypeScript support:
 
-- Contract creation, compilation, and deployment
-- Local development with Hardhat network
-- Sepolia testnet deployment and verification
-- Custom Hardhat tasks
-- Hardhat Console for interactive development
-- Contract testing with Mocha/Chai framework
-- Gas analysis and code coverage measurement
+**Core Features:**
 
-**Full Documentation:** [hh_ss_fcc.md](./hh_ss_fcc/hh_ss_fcc.md)  
-**Testing Guide:** [hardhat_test.md](./hardhat_test.md)
+- Smart contract creation, compilation, and deployment to local/testnet networks
+- Sepolia testnet deployment with contract verification on Etherscan
+- Custom Hardhat tasks for chain interaction
+- Interactive development with Hardhat Console
+- Comprehensive testing with Mocha/Chai framework
+- Gas cost analysis and code coverage measurement
+- TypeScript support with TypeChain for type-safe contract interaction
+
+**Documentation** (in `README.md/` directory):
+
+- [hh_ss_fcc.md](./README.md/hh_ss_fcc.md) - Core setup, deployment, and verification
+- [hardhat_test.md](./README.md/hardhat_test.md) - Testing, gas reporting, and coverage
+- [SimpleStorage_Typescript.md](./README.md/SimpleStorage_Typescript.md) - TypeScript migration
 
 ---
 
 ## Quick Start
 
-1. Clone and install:
-
 ```bash
-git clone https://github.com/your-username/hardhat_proj.git
-cd hardhat_proj/hh_ss_fcc
+# Install dependencies
 yarn install
-```
 
-2. Compile contracts:
-
-```bash
+# Compile contracts
 yarn hardhat compile
+
+# Run tests
+yarn hardhat test
+
+# Deploy to local network
+yarn hardhat run scripts/deploy.ts
+
+# Deploy to Sepolia testnet
+yarn hardhat run scripts/deploy.ts --network sepolia
 ```
 
-3. Deploy locally:
+---
 
-```bash
-yarn hardhat run scripts/deploy.js
-```
+## Essential Commands
 
-## Core Commands
+| Command                                           | Purpose                       |
+| ------------------------------------------------- | ----------------------------- |
+| `yarn hardhat compile`                            | Compile contracts             |
+| `yarn hardhat test`                               | Run all tests                 |
+| `yarn hardhat test --grep "keyword"`              | Run specific tests            |
+| `yarn hardhat coverage`                           | Measure test coverage         |
+| `yarn hardhat block-number`                       | Custom task: get block number |
+| `yarn hardhat node`                               | Start local development node  |
+| `yarn hardhat console --network localhost`        | Interactive console           |
+| `yarn hardhat verify --network sepolia <address>` | Verify on Etherscan           |
 
-| Command                                                | Purpose                           |
-| ------------------------------------------------------ | --------------------------------- |
-| `yarn hardhat compile`                                 | Compile contracts                 |
-| `yarn hardhat run scripts/deploy.js`                   | Deploy to local network           |
-| `yarn hardhat run scripts/deploy.js --network sepolia` | Deploy to Sepolia testnet         |
-| `yarn hardhat test`                                    | Run test suite with gas reporting |
-| `yarn hardhat test --grep "keyword"`                   | Run specific tests                |
-| `yarn hardhat coverage`                                | Measure test coverage             |
-| `yarn hardhat node`                                    | Start local node                  |
-| `yarn hardhat console --network localhost`             | Interactive console               |
-| `yarn hardhat verify --network sepolia <address>`      | Verify on Etherscan               |
+---
 
-## Prerequisites
+## Setup for Testnet Deployment
 
-- Node.js: v22.10.0
-- Yarn: v1.22.22
-- Git: v2.44.0.windows.1
-
-## Environment Setup
-
-Create `.env` file for testnet deployment:
+Create `.env` file in project root:
 
 ```env
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
@@ -84,75 +83,48 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
 ```
 
-⚠️ **Never commit `.env` files. Use test wallets with minimal funds only.**
+⚠️ **Never commit `.env`. Use test wallets with minimal funds only.**
 
-## Key Resources
-
-- [Hardhat Documentation](https://hardhat.org/docs)
-- [Solidity Documentation](https://docs.soliditylang.org/)
-- [Sepolia Etherscan](https://sepolia.etherscan.io/)
-- [Chainlist](https://chainlist.org/)
+---
 
 ## Project Structure
 
 ```
 hh_ss_fcc/
-├── contracts/           # Smart contracts
-├── scripts/             # Deployment scripts
-├── tasks/               # Custom Hardhat tasks
-├── test/                # Test files (Mocha/Chai)
-├── hardhat.config.js    # Hardhat configuration
-├── .env                 # Environment variables (not in repo)
-└── hh_ss_fcc.md         # Full project documentation
+├── contracts/              # Solidity smart contracts
+├── scripts/                # Deployment scripts (TypeScript)
+├── tasks/                  # Custom Hardhat tasks
+├── test/                   # Test suite (TypeScript)
+├── typechain-types/        # Auto-generated contract types
+├── hardhat.config.ts       # Configuration
+└── tsconfig.json           # TypeScript config
 ```
 
-## Security & Testing
+---
 
-Testing is essential for smart contract security. Smart contract code is publicly available on the blockchain and exposed to potential exploitation. Comprehensive testing is your first line of defense.
+## Why Testing Matters
 
-### Running Tests
+Smart contracts are publicly deployed on the blockchain and exposed to anyone. Comprehensive testing is your first line of defense against bugs and exploits. Many projects have failed due to insufficient testing—see [rekt.news](https://rekt.news/) for real examples.
 
-Write tests in the `test/` directory using Mocha/Chai framework:
+**Key aspects covered:**
 
-```bash
-yarn hardhat test                    # Run all tests
-yarn hardhat test --grep "keyword"   # Run specific tests
-```
+- Unit tests with Mocha/Chai framework
+- Gas optimization analysis
+- Code coverage measurement (aim for 80-90%)
 
-### Analyzing Performance
+Refer to [hardhat_test.md](./README.md/hardhat_test.md) for detailed testing practices and security considerations.
 
-**Gas Reporting:** See how much gas each function consumes:
+---
 
-```bash
-yarn hardhat test  # Automatically displays gas usage
-```
+## Resources
 
-Configure gas reporting in `hardhat.config.js` with USD conversion using CoinMarketCap API.
+- [Hardhat Documentation](https://hardhat.org/docs)
+- [Solidity Documentation](https://docs.soliditylang.org/)
+- [Sepolia Etherscan](https://sepolia.etherscan.io/)
+- [rekt.news](https://rekt.news/) - Learn from security failures
+- [Chainlist](https://chainlist.org/) - Network configurations
 
-**Code Coverage:** Measure how much of your contract is tested:
-
-```bash
-yarn hardhat coverage  # Generate coverage report
-```
-
-Target 80-90% coverage for production contracts.
-
-### Test Best Practices
-
-- Use descriptive test names that explain what is being validated
-- Keep tests focused and atomic (one assertion per concept)
-- Use `beforeEach()` to avoid code duplication
-- Test edge cases and boundary conditions
-- Verify state changes correctly
-- Always convert BigNumber to strings before assertions
-
-For detailed testing guidance, see [hardhat_test.md](./hardhat_test.md), which includes:
-
-- Mocha/Chai framework concepts
-- Running tests with `--grep` and `.only` flags
-- Gas reporting configuration
-- Code coverage analysis
-- Learning from rekt.news security failures
+---
 
 ## License
 
@@ -160,4 +132,4 @@ MIT
 
 ---
 
-**Note:** For educational purposes. Always validate on testnet before mainnet deployment.
+**Note:** For educational purposes. Always test thoroughly on testnet before any mainnet deployment.
