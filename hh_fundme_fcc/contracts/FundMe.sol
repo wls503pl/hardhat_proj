@@ -19,10 +19,14 @@ contract FundMe {
 
     address public immutable i_owner;
 
+    AggregatorV3Interface public priceFeed;
+
     // If you only want the contract owner to call the withdraw function,
     // you can specify who is the owner of the contract in the contract constructor
-    constructor() {
+    constructor(address priceFeedAddress) {
         i_owner = msg.sender;
+        // Make priceFeed modular and variable, with the value depending on the chain
+        priceFeed = AggregatorV3Interface(priceFeedAddress);
     }
 
     function fund() public payable {
@@ -30,10 +34,12 @@ contract FundMe {
         // 1. How do we send ETH to this contract ?
         // Question: value represent ETH, if we want to know it's real value represented by US Dollar
         // we should use Decentralized Oracle like Chainlink
-        // msg.value.getConversionRate(): "msg.value" will be considered as the first parameter passed into the "getConversionRate" function
+        // msg.value.getConversionRate(uint256 ethAmount, AggregatorV3Interface priceFeed):
+        // "msg.value" will be considered as the first parameter passed into the "getConversionRate" function
         require(
-            /*getConversionRate(msg.value)*/ msg.value.getConversionRate() >=
-                MINIMUM_USD,
+            /*getConversionRate(msg.value)*/ msg.value.getConversionRate(
+                priceFeed
+            ) >= MINIMUM_USD,
             "Didn't send enough USD ..."
         ); // at list $50
         funders.push(msg.sender);
