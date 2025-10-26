@@ -25,7 +25,7 @@ const {
   INITIAL_ANSWER,
 } = require("../helper-hardhat-config");
 const { network } = require("hardhat");
-const { verify } = require("../utils/verify");
+//const { verify } = require("../utils/verify");
 
 // getNamedAccounts() :A fixed function used to retrieve named accounts defined in "hardhat-deploy" library.
 // deployments: A fixed deployment management object. Contains various functions and information related to contract deployment.
@@ -78,14 +78,14 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     waitConfirmations: network.config.blockConfirmations || 1,
   });
 
-  if (
+  /*if (
     !developmentChains.includes(network.name) &&
     process.env.ETHERSCAN_API_KEY
   ) {
     // verify contract
     // Due to network reasons, comment out automatic verification and manually verify the contract instead
     await verify(fundMe.address, args);
-  }
+  }*/
 
   log("---------------------------------------------");
 };
