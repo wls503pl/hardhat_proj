@@ -25,6 +25,7 @@ const {
   INITIAL_ANSWER,
 } = require("../helper-hardhat-config");
 const { network } = require("hardhat");
+const { verify } = require("../utils/verify");
 
 // getNamedAccounts() :A fixed function used to retrieve named accounts defined in "hardhat-deploy" library.
 // deployments: A fixed deployment management object. Contains various functions and information related to contract deployment.
@@ -65,15 +66,27 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
    * Place the arguments you want to pass to the constructor in args (here there is only one, 'priceFeedAddress' ).
    * Finally, let's do some custom logging so we don't have to use a lot of "console.log" all the time.
    */
+  // Parameters passed to the constructor of contract FundMe.
+  const args = [ethUsdPriceFeedAddress];
   const fundMe = await deploy("FundMe", {
     from: deployer,
-    args: [
-      // Parameters passed to the constructor of contract FundMe.
-      ethUsdPriceFeedAddress,
-    ],
+    args: args,
     // Customize log styles to avoid using a lot of "console.log".
     log: true,
+    // Wait for the number of confirmed blocks set by the network in the script.
+    // If not set, wait for at least 1 block.
+    waitConfirmations: network.config.blockConfirmations || 1,
   });
+
+  if (
+    !developmentChains.includes(network.name) &&
+    process.env.ETHERSCAN_API_KEY
+  ) {
+    // verify contract
+    // Due to network reasons, comment out automatic verification and manually verify the contract instead
+    await verify(fundMe.address, args);
+  }
+
   log("---------------------------------------------");
 };
 module.exports.tags = ["all", "fundme"];
