@@ -1,3 +1,12 @@
+/*
+ * helper-hardhat-config.js
+ *
+ * This file maintains a chainId-based configuration mapping that stores network-specific contract addresses and parameters.
+ * Similar to Aave's approach, it enables dynamic address resolution based on the current blockchain network.
+ * When deploying or interacting with contracts, the code queries this config to retrieve the correct oracle addresses,
+ * token addresses, and other network-specific data, allowing seamless multi-chain deployment without hardcoding addresses.
+ */
+
 const networkConfig = {
   // Sepolia testnet chainId is 11155111
   11155111: {
@@ -18,4 +27,8 @@ const networkConfig = {
   },
 };
 
-module.exports = { networkConfig };
+const developmentChains = ["hardhat", "localhost"];
+const DECIMALS = 8;
+const INITIAL_ANSWER = 200000000000;
+
+module.exports = { networkConfig, developmentChains, DECIMALS, INITIAL_ANSWER };
