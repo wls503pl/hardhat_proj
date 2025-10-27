@@ -3,17 +3,20 @@ pragma solidity ^0.8.16;
 
 import "./PriceConverter.sol";
 
-error NotOwner();
+error FundMe_NotOwner();
 
-/*
- * Functionality:
- * Get funds from Users, withdraw funds, set a minimum funding value in USD
+/** @title A contract for crowd funding
+ *  @author Peile Wu
+ *  @notice This contract is to demo a sample funding contract
+ *  @dev This implements price feeds as our library
  */
 contract FundMe {
+    /** Type Declarations */
     using PriceConverter for uint256;
 
     uint256 public constant MINIMUM_USD = 50 * 1e18; // The conversion basis is wei
 
+    /** State Variables */
     address[] public funders;
     mapping(address => uint256) public addressToAmountFunded;
 
@@ -46,10 +49,11 @@ contract FundMe {
         addressToAmountFunded[msg.sender] = msg.value;
     }
 
+    /** Modifier */
     modifier onlyOwner() {
         // require(i_owner == msg.sender, "Owner is not Sender.");
         if (msg.sender != i_owner) {
-            revert NotOwner();
+            revert FundMe_NotOwner();
         }
         _;
     }
