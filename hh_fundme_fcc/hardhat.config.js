@@ -59,10 +59,11 @@ module.exports = {
     compilers: [{ version: "0.6.18" }, { version: "0.8.18" }],
   },
   gasReporter: {
-    enabled: false,
+    enabled: true,
     outputFile: "gas-report.txt",
     noColors: true,
     currency: "USD",
-    coinmarketcap: COINMARKETCAP_API_KEY,
+    //coinmarketcap: COINMARKETCAP_API_KEY,
+    //token: "MATIC",
   },
 };

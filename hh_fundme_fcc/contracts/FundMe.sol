@@ -17,19 +17,19 @@ contract FundMe {
     uint256 public constant MINIMUM_USD = 50 * 1e18; // The conversion basis is wei
 
     /** State Variables */
-    address[] public funders;
-    mapping(address => uint256) public addressToAmountFunded;
+    address[] public s_funders;
+    mapping(address => uint256) public s_addressToAmountFunded;
 
     address public immutable i_owner;
 
-    AggregatorV3Interface public priceFeed;
+    AggregatorV3Interface public s_priceFeed;
 
     // If you only want the contract owner to call the withdraw function,
     // you can specify who is the owner of the contract in the contract constructor
-    constructor(address priceFeedAddress) {
+    constructor(address s_priceFeedAddress) {
         i_owner = msg.sender;
-        // Make priceFeed modular and variable, with the value depending on the chain
-        priceFeed = AggregatorV3Interface(priceFeedAddress);
+        // Make s_priceFeed modular and variable, with the value depending on the chain
+        s_priceFeed = AggregatorV3Interface(s_priceFeedAddress);
     }
 
     function fund() public payable {
@@ -37,16 +37,16 @@ contract FundMe {
         // 1. How do we send ETH to this contract ?
         // Question: value represent ETH, if we want to know it's real value represented by US Dollar
         // we should use Decentralized Oracle like Chainlink
-        // msg.value.getConversionRate(uint256 ethAmount, AggregatorV3Interface priceFeed):
+        // msg.value.getConversionRate(uint256 ethAmount, AggregatorV3Interface s_priceFeed):
         // "msg.value" will be considered as the first parameter passed into the "getConversionRate" function
         require(
             /*getConversionRate(msg.value)*/ msg.value.getConversionRate(
-                priceFeed
+                s_priceFeed
             ) >= MINIMUM_USD,
             "Didn't send enough USD ..."
         ); // at list $50
-        funders.push(msg.sender);
-        addressToAmountFunded[msg.sender] += msg.value;
+        s_funders.push(msg.sender);
+        s_addressToAmountFunded[msg.sender] += msg.value;
     }
 
     /** Modifier */
@@ -61,14 +61,14 @@ contract FundMe {
     function withdraw() public onlyOwner {
         for (
             uint256 funderIndex = 0;
-            funderIndex < funders.length;
+            funderIndex < s_funders.length;
             funderIndex++
         ) {
-            address funder = funders[funderIndex];
-            addressToAmountFunded[funder] = 0;
+            address funder = s_funders[funderIndex];
+            s_addressToAmountFunded[funder] = 0;
         }
         // reset the funder array
-        funders = new address[](0);
+        s_funders = new address[](0);
         /*
          * actually withdraw the funds: 3 ways
          * msg.sender = address
@@ -94,6 +94,28 @@ contract FundMe {
         // call, returns 2 values (bool, bytes) , this Method is the most Recommended to send tokens
         (bool callSuccess /*bytes memory dataReturned*/, ) = payable(msg.sender)
             .call{value: address(this).balance}("");
+        require(callSuccess, "Call failed ...");
+    }
+
+    function cheaperWithdraw() public payable onlyOwner {
+        /*
+         * Instead of reading data from 'storage' all the time,
+         * read the entire 's_funders' array into 'memory' at once.
+         * Then read from 'memory' instead of 'storage'
+         */
+        address[] memory funders = s_funders;
+
+        for (
+            uint256 funderIndex = 0;
+            funderIndex < funders.length;
+            funderIndex++
+        ) {
+            address funder = funders[funderIndex];
+            // Note: 'mapping' cannot be stored in memory
+            s_addressToAmountFunded[funder] = 0;
+        }
+        s_funders = new address[](0);
+        (bool callSuccess, ) = i_owner.call{value: address(this).balance}("");
         require(callSuccess, "Call failed ...");
     }
 }
