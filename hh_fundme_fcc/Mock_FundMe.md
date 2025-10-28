@@ -1,890 +1,906 @@
-# FundMe Smart Contract with Mock Oracle - Complete Guide
+# FundMe Contract Testing Guide
 
 **Author:** Peile Wu  
 **Email:** peile.wu.1990@gmail.com  
-**Date:** October 26, 2025  
-**Version:** 1.0
-
----
-
-## Executive Summary
-
-This guide walks you through building and deploying a FundMe contract with local Mock oracle support. The project demonstrates professional multi-chain deployment patterns using Hardhat-Deploy, allowing fast local iteration via Mock pricing oracles while maintaining compatibility with real Chainlink oracles on testnets.
-
-**Key Achievement:** Deploy to both local (Mock) and testnet (Real Oracle) networks using the same codebase.
+**Date:** October 28, 2025
 
 ---
 
 ## Table of Contents
 
-1. [Why Mock Oracles?](#why-mock-oracles)
-2. [Architecture Overview](#architecture-overview)
-3. [Mock Oracle Mechanism](#mock-oracle-mechanism)
-4. [Project Structure](#project-structure)
-5. [Implementation Steps](#implementation-steps)
-6. [Deployment Execution](#deployment-execution)
-7. [Command Reference](#command-reference)
+1. [Overview](#overview)
+2. [Project Structure](#project-structure)
+3. [Setup and Installation](#setup-and-installation)
+4. [Testing Framework](#testing-framework)
+5. [Test Execution Flow](#test-execution-flow)
+6. [Test Cases](#test-cases)
+7. [Withdraw Test - Detailed Breakdown](#withdraw-test---detailed-breakdown)
+8. [Multiple Funders Withdraw Test](#multiple-funders-withdraw-test)
+9. [Owner Permission Test](#owner-permission-test)
+10. [Debugging Techniques](#debugging-techniques)
+11. [Running Tests](#running-tests)
+12. [Code Coverage](#code-coverage)
+13. [Key API Changes (ethers v5 to v6)](#key-api-changes-ethers-v5-to-v6)
+14. [Summary](#summary)
 
 ---
 
-## Why Mock Oracles?
+## Overview
 
-### The Problem with Testnet-Only Development
+Testing smart contracts is essential for optimization, gas efficiency, and security. This guide demonstrates comprehensive testing of the FundMe contract using two types of tests:
 
-Deploying directly to Sepolia testnet for every iteration causes critical issues:
+- **Unit Tests (UT):** Test individual code units locally on Hardhat
+- **Staging Tests (ST):** Test on testnets before mainnet deployment
 
-| Issue                   | Impact                                    | Example                                             |
-| ----------------------- | ----------------------------------------- | --------------------------------------------------- |
-| **Slow Network**        | 🐢 30+ seconds per deployment             | Edit contract → wait 30s → see error → repeat       |
-| **Network Instability** | 🔴 Frequent timeouts & failures           | Transaction fails due to RPC timeout, not your code |
-| **Slow Feedback Loop**  | ⏳ 2-3 minutes per test cycle             | Development becomes glacially slow                  |
-| **Limited Test Tokens** | 💰 Sepolia faucet rate-limited            | Run out of test ETH after 10-15 deployments         |
-| **Debugging Nightmare** | 🤯 Hard to isolate network vs code issues | Is it your contract bug or network problem?         |
-
-### The Solution: Local Mock Oracles
-
-Mock oracles simulate real Chainlink oracles locally, providing:
-
-- ⚡ **Instant Deployment** - Milliseconds instead of 30 seconds
-- 🎯 **100% Stability** - No network timeouts or errors
-- 🎨 **Complete Control** - Set any ETH/USD price for testing
-- 💚 **Free** - No test tokens needed
-- 🐛 **Perfect Debugging** - Immediate feedback on errors
-
-### Development Workflow
-
-```
-Phase 1: Local Development
-├─ Use Mock Oracle ($2000/ETH fixed)
-├─ Iterate rapidly
-├─ Test edge cases with custom prices
-└─ All changes complete in seconds
-
-Phase 2: Testnet Verification
-├─ Deploy to Sepolia (same code)
-├─ Verify real Chainlink oracle integration
-├─ Run final tests
-└─ Costs only a few Sepolia ETH
-
-Phase 3: Mainnet
-├─ Deploy using identical script
-├─ Live with real oracle data
-└─ Fully tested & confident
-```
-
----
-
-## Architecture Overview
-
-### Network-Aware Deployment
-
-Your deployment system automatically adapts to the target network:
-
-```
-Deployment Script
-       ↓
-┌──────────────────────────┐
-│ Check: Local or Testnet? │
-└──────────────────────────┘
-       ↓
-       ├─ Local (hardhat) → Use Mock Oracle
-       │                    • Deploy MockV3Aggregator
-       │                    • Deploy FundMe with Mock address
-       │                    • Price fixed at $2000
-       │
-       └─ Testnet (sepolia) → Use Real Oracle
-                              • Skip Mock deployment
-                              • Deploy FundMe with Chainlink address
-                              • Price from real market data
-```
-
-### Contract Interactions
-
-```
-FundMe Contract
-    ↓
-    ├─ Local Network
-    │  └─ Calls Mock Oracle → Always returns $2000
-    │
-    └─ Sepolia Network
-       └─ Calls Real Chainlink → Returns live ETH/USD price
-```
-
----
-
-## Mock Oracle Mechanism
-
-### What is MockV3Aggregator?
-
-MockV3Aggregator is a simulated Chainlink price feed that:
-
-1. **Implements the same interface** as real Chainlink oracles
-2. **Returns fixed prices** instead of real market data
-3. **Uses 8 decimal places** for precision (Chainlink standard)
-4. **Allows custom initialization** of any ETH/USD price
-
-### Price Representation with 8 Decimals
-
-All Chainlink oracles use 8 decimal places to avoid floating-point precision issues:
-
-```
-Price Value:     200000000000
-Decimal Places:  8
-Actual Price:    200000000000 ÷ 10^8 = $2000
-
-Formula: DisplayPrice = StoredValue ÷ 10^8
-```
-
-**Why 8 decimals?**
-
-- Avoids floating-point math (which causes precision loss)
-- Uses only integers (Solidity native support)
-- Matches Chainlink's industry standard
-- Maintains compatibility with all DeFi protocols
-
-### Customizing Mock Prices
-
-You can test different scenarios by changing `INITIAL_ANSWER` in `helper-hardhat-config.js`:
-
-```javascript
-// Default: Test normal scenario
-const INITIAL_ANSWER = 200000000000; // ETH = $2000
-
-// Test high prices
-const INITIAL_ANSWER = 300000000000; // ETH = $3000
-
-// Test low prices
-const INITIAL_ANSWER = 150000000000; // ETH = $1500
-
-// Test boundary: Minimum funding
-const INITIAL_ANSWER = 5000000000; // ETH = $50
-
-// Test extreme: Price crash
-const INITIAL_ANSWER = 500000000; // ETH = $5
-```
-
-### MockV3Aggregator Constructor
-
-The MockV3Aggregator contract requires exactly two constructor parameters as shown in the Chainlink source:
-
-![MockV3Aggregator Constructor Parameters](./img/mock_helper_hardhat_config/MockV3Aggregator_constructor_para...png)
-
-**Constructor Signature:**
-
-```solidity
-constructor(uint8 _decimals, int256 _initialAnswer) {
-    decimals = _decimals;
-    updateAnswer(_initialAnswer);
-}
-```
-
-**Parameters Used in Deployment:**
-
-- `_decimals`: `8` (Chainlink standard for all price feeds)
-- `_initialAnswer`: `200000000000` (represents $2000 with 8 decimal places)
-
-**How Deployment Script Passes Parameters:**
-
-```javascript
-args: [DECIMALS, INITIAL_ANSWER]; // [8, 200000000000]
-```
-
-This creates a Mock oracle that returns exactly `200000000000 / 10^8 = $2000` per ETH.
+This document focuses on Unit Tests using Hardhat with hardhat-deploy.
 
 ---
 
 ## Project Structure
 
-### Complete Directory Layout
+Create the following directory structure in your project root:
 
 ```
 hh_fundme_fcc/
-│
 ├── contracts/
-│   ├── FundMe.sol                    # Main funding contract
-│   ├── PriceConverter.sol            # Price conversion library
+│   ├── FundMe.sol
+│   ├── PriceConverter.sol
 │   └── test/
-│       └── MockV3Aggregator.sol      # Mock oracle (test only)
-│
+│       └── MockV3Aggregator.sol
 ├── deploy/
-│   ├── 00-deploy-mocks.js           # Deploy Mock oracle (runs first)
-│   └── 01-deploy-fund-me.js         # Deploy FundMe (runs second)
-│
-├── deployments/                      # Auto-generated deployment records
-│   └── hardhat/
-│       ├── MockV3Aggregator.json
-│       └── FundMe.json
-│
-├── artifacts/                        # Compiled contracts
-│   └── @chainlink/contracts/
-│       └── src/v0.8/
-│           └── mocks/
-│               └── MockV3Aggregator.sol
-│                   ├── MockV3Aggregator.dbg.json
-│                   └── MockV3Aggregator.json
-│
-├── img/                             # Screenshots & diagrams
-│   └── mock_helper_hardhat_config/
-│       ├── compiled_MockV3Aggregator.png
-│       ├── deploy_MockV3Aggregator.png
-│       ├── MockV3Aggregator_constructor_para...png
-│       ├── tag_mocks_deployed.png
-│       └── npx_hardhat_deploy_result.png
-│
-├── helper-hardhat-config.js         # Network config center
-├── hardhat.config.js                # Hardhat configuration
-├── package.json                     # Dependencies
-├── .env                            # Environment variables
-├── .gitignore
-└── hardhat_fundMe.md               # Detailed documentation
+│   ├── 00-deploy-mocks.js
+│   └── 01-deploy-fundme.js
+├── test/
+│   ├── unit/
+│   │   └── FundMe_test.js          ← Unit tests (local Hardhat)
+│   └── staging/
+│       └── FundMe_staging.js       ← Staging tests (testnet only)
+├── hardhat.config.js
+├── .env
+└── package.json
 ```
 
-### Key Directories Explained
-
-**`contracts/test/`**
-
-- Contains MockV3Aggregator.sol
-- Separated from production contracts
-- Only compiled when needed
-- Never deployed to mainnet
-
-**`artifacts/@chainlink/contracts/`**
-
-- Generated after compilation
-- Contains MockV3Aggregator's ABI & bytecode
-- Used by deploy scripts for actual deployment
-
-**`deployments/`**
-
-- Auto-created by hardhat-deploy
-- Stores deployment records with:
-  - Contract address
-  - Constructor parameters
-  - Transaction hash
-  - ABI & bytecode
-- Enables repeatable deployments
+**Key Point:** Always run `npx hardhat test` from the **project root** directory, not from subdirectories.
 
 ---
 
-## Implementation Steps
+## Setup and Installation
 
-### Step 1: Configure Helper Config
+### 1. Initialize Project
 
-**File:** `helper-hardhat-config.js`
-
-```javascript
-const networkConfig = {
-  // Sepolia testnet
-  11155111: {
-    name: "sepolia",
-    ethUsdPriceFeed: "0x694AA1769357215DE4FAC081bf1f309aDC325306",
-  },
-  // Arbitrum Sepolia
-  421614: {
-    name: "arbitrumSepolia",
-    ethUsdPriceFeed: "0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165",
-  },
-  // OP Sepolia
-  11155420: {
-    name: "opSepolia",
-    ethUsdPriceFeed: "0x61Ec26aA57019C486B10502285c5A3D4A4750AD7",
-  },
-};
-
-// Development chains require Mock deployment
-const developmentChains = ["hardhat", "localhost"];
-
-// Mock oracle parameters
-const DECIMALS = 8; // Standard Chainlink decimals
-const INITIAL_ANSWER = 200000000000; // ETH price: $2000
-
-module.exports = {
-  networkConfig,
-  developmentChains,
-  DECIMALS,
-  INITIAL_ANSWER,
-};
+```bash
+npm init -y
+npm install --save-dev hardhat
+npx hardhat
 ```
 
-**What this configures:**
+### 2. Install Required Dependencies
 
-- Network-to-oracle-address mapping for testnets
-- Which networks should use Mock vs real oracles
-- The mock price: $2000 per ETH
+```bash
+npm install --save-dev \
+  @nomiclabs/hardhat-etherscan \
+  @nomicfoundation/hardhat-chai-matchers \
+  @nomicfoundation/hardhat-ethers \
+  dotenv \
+  ethers \
+  hardhat-deploy \
+  hardhat-deploy-ethers \
+  hardhat-gas-reporter \
+  solidity-coverage \
+  chai
+```
+
+### 3. Handle Version Conflicts
+
+Since we're using **ethers v6** and **hardhat-deploy-ethers v0.3.0-beta.13** (which supports ethers v5), install with legacy peer dependencies:
+
+```bash
+npm install --legacy-peer-deps
+```
 
 ---
 
-### Step 2: Create Mock Deployment Script
+## Testing Framework
 
-**File:** `deploy/00-deploy-mocks.js`
+### Required Libraries
+
+#### 1. **@nomicfoundation/hardhat-chai-matchers**
+
+This replaces the deprecated Waffle library for advanced assertions.
+
+**Installation:**
+
+```bash
+npm install --save-dev @nomicfoundation/hardhat-chai-matchers
+```
+
+**Configuration in hardhat.config.js:**
 
 ```javascript
-const { network } = require("hardhat");
-const {
-  developmentChains,
-  DECIMALS,
-  INITIAL_ANSWER,
-} = require("../helper-hardhat-config");
+require("@nomicfoundation/hardhat-chai-matchers");
+```
 
-module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy, log } = deployments;
-  const { deployer } = await getNamedAccounts();
+**Import in test file:**
 
-  // Only deploy Mock on local development networks
-  if (developmentChains.includes(network.name)) {
-    log("Local network detected! Deploying mocks ...");
+```javascript
+const { assert, expect } = require("chai");
+require("@nomicfoundation/hardhat-chai-matchers");
+```
 
-    // Deploy MockV3Aggregator with custom price
-    await deploy("MockV3Aggregator", {
-      contract: "MockV3Aggregator", // Contract name in artifacts
-      from: deployer, // Who deploys
-      log: true, // Print deployment info
-      args: [DECIMALS, INITIAL_ANSWER], // Constructor params: decimals=8, price=$2000
-    });
+#### 2. **hardhat-deploy**
 
-    log("Mocks deployed!");
-    log("----------------------------------------------");
-  }
-};
+Manages smart contract deployments with fixtures for testing.
 
-module.exports.tags = ["all", "mocks"];
+**Key functions:**
+
+- `deployments.fixture(["all"])` - Deploy all contracts with "all" tag
+- `deployments.get("ContractName")` - Get contract deployment info
+- `ethers.getContractAt()` - Connect to deployed contracts
+
+#### 3. **ethers v6**
+
+JavaScript SDK for Ethereum interaction. API differs significantly from v5.
+
+---
+
+## Test Execution Flow
+
+Understanding when different phases occur is crucial. Here's the complete flow:
+
+### Phase 1: Contract Deployment – in `beforeEach`
+
+```javascript
+beforeEach(async function () {
+  // Step 1: Deploy all contracts
+  await deployments.fixture(["all"]); // ← Constructor runs here
+
+  // Step 2: Get deployer account
+  deployer = (await getNamedAccounts()).deployer;
+
+  // Step 3: Get FundMe contract and connect to it
+  const FundMeDeployment = await deployments.get("FundMe");
+  fundMe = await ethers.getContractAt(
+    "FundMe",
+    FundMeDeployment.address,
+    await ethers.getSigner(deployer)
+  );
+  // ← Now fundMe is a contract instance we can call functions on
+
+  // Step 4: Get MockV3Aggregator contract
+  const MockV3Deployment = await deployments.get("MockV3Aggregator");
+  mockV3Aggregator = await ethers.getContractAt(
+    "MockV3Aggregator",
+    MockV3Deployment.address,
+    await ethers.getSigner(deployer)
+  );
+});
+```
+
+**What happens in this phase:**
+
+- `deployments.fixture(["all"])` deploys all contracts from `/deploy` folder
+- Contract constructors execute during deployment
+- We retrieve deployed contract addresses
+- We create contract instances to interact with
+
+**Timeline:** This runs **before each test**, so every test gets fresh contracts
+
+### Phase 2: Contract Interaction (Function Calls) – in `it()` blocks
+
+**Example 1: Testing the fund() function**
+
+```javascript
+it("Updated the amount funded data structure", async function () {
+  // INTERACT: Call the fund() function on the contract
+  await fundMe.fund({ value: sendValue });
+
+  // INTERACT: Read the mapping to verify data was stored
+  const response = await fundMe.addressToAmountFunded(deployer);
+
+  // VERIFY: Assert the result matches what we sent
+  assert.equal(response.toString(), sendValue.toString());
+});
+```
+
+**What happens:**
+
+1. `fundMe.fund({ value: sendValue })` - Calls contract's fund function and sends 1 ETH
+2. `fundMe.addressToAmountFunded(deployer)` - Reads the mapping to verify ETH amount was recorded
+3. `assert.equal()` - Verifies the recorded amount equals what was sent
+
+**Example 2: Testing the withdraw() function**
+
+```javascript
+it("Withdraw ETH from a single founder", async function () {
+  // INTERACT: Call the withdraw() function
+  const transactionResponse = await fundMe.withdraw();
+  const transactionReceipt = await transactionResponse.wait(1);
+
+  // VERIFY: Check if contract balance is now 0
+  const endingFundMeBalance = await ethers.provider.getBalance(fundMe.target);
+  assert.equal(endingFundMeBalance, 0);
+});
+```
+
+**What happens:**
+
+1. `fundMe.withdraw()` - Calls the contract's withdraw function
+2. `.wait(1)` - Waits for 1 block confirmation
+3. `ethers.provider.getBalance()` - Reads the contract's ETH balance
+4. `assert.equal()` - Verifies the balance is now 0
+
+### Complete Test Execution Timeline
+
+```
+beforeEach()
+  ↓
+  [Deploy contracts with deployments.fixture()]
+  [Constructor runs automatically]
+  [Connect to contract instances]
+  ↓
+it("test case 1")
+  ↓
+  [Call contract functions: fundMe.fund()]
+  [Read contract state: fundMe.addressToAmountFunded()]
+  [Verify with assertions]
+  ↓
+beforeEach()  ← Runs again! Fresh contracts deployed
+  ↓
+  [Deploy contracts again]
+  ↓
+it("test case 2")
+  ↓
+  [Call different contract functions: fundMe.withdraw()]
+  [Verify results]
 ```
 
 **Key Points:**
 
-- `if (developmentChains.includes(network.name))` ensures Mock only deploys locally
-- `args: [DECIMALS, INITIAL_ANSWER]` passes constructor parameters
-- `tags: ["all", "mocks"]` allows selective deployment via `--tags` flag
+- **Deployment** happens in `beforeEach()` - `deployments.fixture()` and `ethers.getContractAt()`
+- **Function Calls** happen in `it()` blocks - `fundMe.fund()`, `fundMe.withdraw()`, etc.
+- **Constructor** executes automatically during `deployments.fixture()` in beforeEach
+- Each test gets **fresh contracts** because `beforeEach()` runs before every test
 
 ---
 
-### Step 3: Update FundMe Contract
+## Test Cases
 
-**File:** `contracts/FundMe.sol` (Key sections)
+### Test 1: Constructor Tests
+
+Verifies that the constructor correctly sets the price feed address.
+
+```javascript
+describe("constructor", async function () {
+  it("sets the aggregator addresses correctly", async function () {
+    // CONTRACT INTERACTION: Read from storage variable set by constructor
+    const response = await fundMe.priceFeed();
+
+    // VERIFICATION: Check if it matches the mock aggregator address
+    assert.equal(response, mockV3Aggregator.target);
+  });
+});
+```
+
+---
+
+### Test 2: Fund Function Tests
+
+Tests the fund() function with various scenarios.
+
+**Test 2a: Revert with insufficient ETH**
+
+```javascript
+it("Fails if you don't send enough ETH", async function () {
+  // CONTRACT INTERACTION: Call fund() without sending value
+  // This should trigger the require statement in the contract
+  await expect(fundMe.fund()).to.be.revertedWith("Didn't send enough USD ...");
+});
+```
+
+**Test 2b: Update funding data structure**
+
+```javascript
+const sendValue = ethers.parseEther("1");
+
+it("Updated the amount funded data structure", async function () {
+  // CONTRACT INTERACTION: Send 1 ETH to fund() function
+  await fundMe.fund({ value: sendValue });
+
+  // CONTRACT INTERACTION: Read the mapping to verify amount was recorded
+  const response = await fundMe.addressToAmountFunded(deployer);
+
+  // VERIFICATION: Check if recorded amount equals sent amount
+  assert.equal(response.toString(), sendValue.toString());
+});
+```
+
+**Test 2c: Add funder to array**
+
+```javascript
+it("Adds funder to array of funders", async function () {
+  // CONTRACT INTERACTION: Send ETH to trigger fund() function
+  await fundMe.fund({ value: sendValue });
+
+  // CONTRACT INTERACTION: Read the funders array at index 0
+  const funder = await fundMe.funders(0);
+
+  // VERIFICATION: Verify that deployer address was added to the array
+  assert.equal(funder, deployer);
+});
+```
+
+---
+
+## Withdraw Test - Detailed Breakdown
+
+The withdraw test is more complex because it validates state changes before and after a transaction. Let's examine each step:
+
+### Full Withdraw Test Code
+
+```javascript
+describe("withdraw", async function () {
+  // Setup: Fund the contract before each withdraw test
+  beforeEach(async function () {
+    await fundMe.fund({ value: sendValue });
+  });
+
+  it("Withdraw ETH from a single founder", async function () {
+    // ========== ARRANGE PHASE ==========
+    // Get initial balances BEFORE withdrawal
+
+    const startingFundMeBalance = await ethers.provider.getBalance(
+      fundMe.target
+    );
+    // ← Reads how much ETH the contract currently holds
+    // ← Expected: 1 ETH (from beforeEach setup)
+
+    const startingDeployerBalance = await ethers.provider.getBalance(deployer);
+    // ← Reads how much ETH the deployer account has BEFORE withdrawal
+    // ← This includes gas costs the deployer has already spent
+
+    // ========== ACT PHASE ==========
+    // Execute the withdraw function
+
+    const transactionResponse = await fundMe.withdraw();
+    // ← Calls the withdraw() function on the contract
+    // ← This transaction will:
+    //   1. Transfer all ETH from contract to deployer
+    //   2. Clear the funders array
+    //   3. Reset all mapping values
+    // ← Returns a transaction response object
+
+    const transactionReceipt = await transactionResponse.wait(1);
+    // ← Waits for 1 block confirmation
+    // ← Returns receipt with transaction details (gas used, etc)
+
+    // Calculate gas cost of this transaction
+    const gasCost = transactionReceipt.gasUsed * transactionReceipt.gasPrice;
+    // ← Gas cost = amount of gas used × gas price per unit
+    // ← Example: 50,000 gas × 20 gwei = cost in wei
+    // ← This is what the deployer paid for the transaction
+
+    // ========== ASSERT PHASE ==========
+    // Get final balances AFTER withdrawal
+
+    const endingFundMeBalance = await ethers.provider.getBalance(fundMe.target);
+    // ← Reads how much ETH the contract holds NOW
+    // ← Expected: 0 (all ETH was withdrawn)
+
+    const endingDeployerBalance = await ethers.provider.getBalance(deployer);
+    // ← Reads how much ETH the deployer has NOW
+    // ← This is starting balance + 1 ETH received - gas cost paid
+
+    // ========== VERIFICATION 1 ==========
+    // Contract should be empty after withdrawal
+    assert.equal(endingFundMeBalance, 0n);
+    // ← Verifies that contract balance is exactly 0
+    // ← If this fails, ETH is still locked in the contract
+
+    // ========== VERIFICATION 2 ==========
+    // Deployer should have received all funds minus gas cost
+    assert.equal(
+      (startingFundMeBalance + startingDeployerBalance).toString(),
+      (endingDeployerBalance + gasCost).toString()
+    );
+    // ← Breaking this down:
+    //   Left side:  Starting contract balance + Starting deployer balance
+    //   Right side: Ending deployer balance + Gas cost paid
+    //
+    // ← In math terms:
+    //   (ContractStart + DeployerStart) = DeployerEnd + GasCost
+    //
+    // ← Rearranged:
+    //   ContractStart = DeployerEnd - DeployerStart + GasCost
+    //   1 ETH = Received ETH + Gas spent
+    //
+    // ← This proves the deployer received the contract's ETH
+    //   minus only the gas fees paid for the transaction
+  });
+});
+```
+
+### Visual Breakdown of Balance Changes
+
+```
+BEFORE WITHDRAW:
+┌──────────────────────┐
+│ Contract:  1 ETH     │  ← From beforeEach: await fundMe.fund({ value: sendValue })
+│ Deployer: X ETH      │
+└──────────────────────┘
+
+WITHDRAW TRANSACTION:
+  fundMe.withdraw()
+    ↓
+    [Transfer 1 ETH from contract to deployer]
+    [Pay gas fee from deployer's balance]
+    ↓
+
+AFTER WITHDRAW:
+┌──────────────────────────────────────┐
+│ Contract:  0 ETH                     │  ← All withdrawn
+│ Deployer: X + 1 - gasCost ETH        │  ← Gained 1 ETH, minus gas
+└──────────────────────────────────────┘
+
+TEST VERIFIES:
+✓ Contract balance is 0
+✓ Deployer gained exactly 1 ETH minus gas cost
+✓ No ETH was lost or gained unexpectedly
+```
+
+---
+
+## Multiple Funders Withdraw Test
+
+This test verifies that the withdraw function works correctly when multiple users have contributed to the contract. It also validates that data structures are properly reset after withdrawal.
+
+```javascript
+it("Allows us to withdraw with multiple funders", async function () {
+  // ========== ARRANGE PHASE ==========
+  // Get all available accounts from ethers
+  const accounts = await ethers.getSigners();
+
+  // Multiple accounts fund the contract (accounts 1-5)
+  for (let i = 1; i < 6; i++) {
+    // Connect the contract to account[i] to simulate that account calling fund()
+    const fundMeConnectedContract = await fundMe.connect(accounts[i]);
+
+    // Each account sends 1 ETH
+    await fundMeConnectedContract.fund({ value: sendValue });
+  }
+
+  // Capture balances before withdrawal
+  const startingFundMeBalance = await ethers.provider.getBalance(fundMe.target);
+  // ← Contract now holds 5 ETH total (1 ETH × 5 funders)
+
+  const startingDeployerBalance = await ethers.provider.getBalance(deployer);
+
+  // ========== ACT PHASE ==========
+  // Deployer (contract owner) withdraws all funds
+  const transactionResponse = await fundMe.withdraw();
+  const transactionReceipt = await transactionResponse.wait(1);
+
+  // Calculate gas cost
+  const gasCost = transactionReceipt.gasUsed * transactionReceipt.gasPrice;
+
+  // Capture balances after withdrawal
+  const endingFundMeBalance = await ethers.provider.getBalance(fundMe.target);
+  const endingDeployerBalance = await ethers.provider.getBalance(deployer);
+
+  // ========== ASSERT PHASE ==========
+  // Verify contract is empty
+  assert.equal(endingFundMeBalance, 0n);
+
+  // Verify deployer received all funds (minus gas cost)
+  assert.equal(
+    (startingFundMeBalance + startingDeployerBalance).toString(),
+    (endingDeployerBalance + gasCost).toString()
+  );
+
+  // Make sure that the funders array is reset properly
+  // Attempting to access a non-existent funder should revert
+  await expect(fundMe.funders(0)).to.be.reverted;
+
+  // Verify that all funder mappings are reset to 0
+  for (let i = 1; i < 6; i++) {
+    assert.equal(await fundMe.addressToAmountFunded(accounts[i].address), 0);
+  }
+});
+```
+
+**Key Validations:**
+
+- ✓ Contract balance becomes 0 after withdrawal
+- ✓ Deployer receives all 5 ETH (minus gas costs)
+- ✓ Funders array is properly cleared (accessing index 0 reverts)
+- ✓ All funder contributions in the mapping are reset to 0
+- ✓ No ETH is lost in the process
+
+---
+
+## Owner Permission Test
+
+This test ensures that only the contract owner can call the withdraw function. It verifies the `onlyOwner` modifier is working correctly by simulating an attack from an unauthorized account.
+
+```javascript
+it("Only allows the owner to withdraw", async function () {
+  // ========== ARRANGE PHASE ==========
+  // Get all available accounts
+  const accounts = await ethers.getSigners();
+
+  // Designate the second account as an attacker
+  // (account[0] is the deployer/owner, account[1] is the attacker)
+  const attacker = accounts[1];
+
+  // ========== ACT & ASSERT PHASE ==========
+  // Connect the contract to the attacker's account
+  const attackerConnectedContract = await fundMe.connect(attacker);
+
+  // Verify that the attacker's withdrawal attempt is reverted
+  // The onlyOwner modifier should prevent this unauthorized access
+  await expect(attackerConnectedContract.withdraw()).to.be.reverted;
+});
+```
+
+**Security Verification:**
+
+- ✓ Non-owner accounts cannot call withdraw()
+- ✓ The `onlyOwner` modifier is properly enforced
+- ✓ Unauthorized withdrawal attempts are rejected with revert
+- ✓ Contract funds are protected from unauthorized access
+
+---
+
+## Debugging Techniques
+
+### Console Logging in Solidity Contracts
+
+You can use Hardhat's built-in console logging feature to debug your Solidity contracts, similar to logging in JavaScript.
+
+#### Step 1: Import Hardhat Console
+
+Add this import to your Solidity contract:
 
 ```solidity
-// Import Chainlink interface
-import "./PriceConverter.sol";
+import "hardhat/console.sol";
+```
 
-contract FundMe {
-    using PriceConverter for uint256;
+#### Step 2: Use Console Functions
 
-    // Store the oracle address (parameterized)
-    AggregatorV3Interface public priceFeed;
+Inside your contract functions, you can now use console logging:
 
-    // Accept price feed address in constructor
-    constructor(address priceFeedAddress) {
-        i_owner = msg.sender;
-        // This works for both Mock and real oracles
-        priceFeed = AggregatorV3Interface(priceFeedAddress);
-    }
+```solidity
+function fund() public payable {
+    console.log("Fund called with value:", msg.value);
+    console.log("Sender address:", msg.sender);
 
-    // Use the oracle in fund function
-    function fund() public payable {
-        require(
-            msg.value.getConversionRate(priceFeed) >= MINIMUM_USD,
-            "Didn't send enough USD ..."
-        );
-        funders.push(msg.sender);
-        addressToAmountFunded[msg.sender] = msg.value;
-    }
+    require(PriceConverter.getConversionRate(msg.value, s_priceFeed) >= MINIMUM_USD,
+            "Didn't send enough USD");
+
+    s_addressToAmountFunded[msg.sender] += msg.value;
+    s_funders.push(msg.sender);
+
+    console.log("Amount funded for sender:", s_addressToAmountFunded[msg.sender]);
 }
+```
+
+#### Step 3: Run Tests Normally
+
+When you run `npx hardhat test`, the console output will be displayed in the test runner output. This helps you observe contract behavior in real-time:
+
+```
+  FundMe
+    constructor
+      ✓ sets the aggregator addresses correctly
+Fund called with value: 1000000000000000000
+Sender address: 0x70997970C51812e339D9B73b0245e3064712ccf1
+Amount funded for sender: 1000000000000000000
+      ✓ Updated the amount funded data structure
 ```
 
 **Benefits:**
 
-- Constructor parameter allows different oracle addresses
-- Same contract works for Mock or real Chainlink
-- No hardcoded addresses needed
+- Monitor variable values during contract execution
+- Trace function flow and decision paths
+- Identify unexpected state changes
+- Debug gas-related issues
 
 ---
 
-### Step 4: Update FundMe Deployment
+## Running Tests
 
-**File:** `deploy/01-deploy-fund-me.js`
+### Execute All Tests
 
-```javascript
-const { network } = require("hardhat");
-const {
-  networkConfig,
-  developmentChains,
-} = require("../helper-hardhat-config");
-
-module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy, log } = deployments;
-  const { deployer } = await getNamedAccounts();
-  const chainId = network.config.chainId;
-
-  let ethUsdPriceFeedAddress;
-
-  // Smart network detection
-  if (developmentChains.includes(network.name)) {
-    // Local network: Get Mock address
-    const mockAggregator = await deployments.get("MockV3Aggregator");
-    ethUsdPriceFeedAddress = mockAggregator.address;
-    log(`Using Mock oracle: ${ethUsdPriceFeedAddress}`);
-  } else {
-    // Testnet: Get real Chainlink address from config
-    ethUsdPriceFeedAddress = networkConfig[chainId]["ethUsdPriceFeed"];
-    log(`Using real Chainlink oracle: ${ethUsdPriceFeedAddress}`);
-  }
-
-  // Deploy FundMe with appropriate oracle address
-  const fundMe = await deploy("FundMe", {
-    from: deployer,
-    args: [ethUsdPriceFeedAddress], // Critical: Pass oracle address
-    log: true,
-  });
-
-  log("---------------------------------------------");
-};
-
-module.exports.tags = ["all", "fundme"];
+```bash
+npx hardhat test
 ```
 
-**Logic Flow:**
+### Run Specific Test Suite
 
-1. Check if network is in `developmentChains` array
-2. If local → get just-deployed Mock address via `deployments.get()`
-3. If testnet → look up real Chainlink address from config
-4. Deploy FundMe with correct address as constructor parameter
+```bash
+npx hardhat test --grep "constructor"
+npx hardhat test --grep "fund"
+npx hardhat test --grep "withdraw"
+```
+
+### Run with Coverage Report
+
+```bash
+npx hardhat coverage
+```
 
 ---
 
-### Step 5: Configure hardhat.config.js
+## Debugging with Breakpoints
 
-**File:** `hardhat.config.js` (Key sections)
+VSCode allows you to debug tests by setting breakpoints and inspecting variables during execution.
+
+### Step 1: Set Breakpoints in VSCode
+
+Click on the line number in VSCode to set a breakpoint. A red dot will appear.
+
+### Step 2: Run Tests with Debugger
+
+In the terminal, switch to your project directory and run:
+
+```bash
+npx hardhat test
+```
+
+The execution will pause at your breakpoint, allowing you to inspect the call stack and variable values.
+
+### Step 3: Inspect Variables in Debug Console
+
+In the debug console, type the variable name to inspect its contents. For example, type `transactionReceipt` to see transaction details.
+
+### Step 4: Find Gas Information
+
+Look for gas-related fields in the transactionReceipt object. You'll see `gasUsed` and `gasPrice` (both are BigNumber types).
+
+### Calculating Gas Cost
+
+Gas cost is calculated by multiplying gas used by gas price per unit:
+
+```javascript
+const gasCost = transactionReceipt.gasUsed * transactionReceipt.gasPrice;
+// Example: 50,000 gas × 20 gwei = total gas cost in wei
+```
+
+This value represents the actual ETH paid for the transaction execution.
+
+---
+
+## Code Coverage
+
+### Coverage Metrics Explained
+
+Running `npx hardhat coverage` generates a detailed report showing which parts of your code were executed during testing.
+
+### Final Coverage Report
+
+After implementing all test cases (constructor, fund, withdraw with single funder, withdraw with multiple funders, and owner permission), the contract achieves near-complete code coverage:
+
+![Code Coverage Report](./img/almost_full_coverage.png)
+
+**Coverage achieved:**
+
+- 100% Statement Coverage
+- 100% Function Coverage
+- 100% Line Coverage
+- Near-complete Branch Coverage
+
+This comprehensive test suite ensures that all critical code paths in the FundMe contract are thoroughly tested, including edge cases, security validations, and state management scenarios.
+
+---
+
+## Key API Changes: ethers v5 to v6
+
+### Critical Changes for Test Updates
+
+#### 1. **Contract Addresses**
+
+**v5:**
+
+```javascript
+mockV3Aggregator.address;
+```
+
+**v6:**
+
+```javascript
+mockV3Aggregator.target;
+```
+
+#### 2. **Parse/Format Ether**
+
+**v5:**
+
+```javascript
+ethers.utils.parseEther("1");
+```
+
+**v6:**
+
+```javascript
+ethers.parseEther("1");
+```
+
+#### 3. **Mapping Access**
+
+**v5:**
+
+```javascript
+await fundMe.addressToAmountFunded[deployer.address];
+```
+
+**v6:**
+
+```javascript
+await fundMe.addressToAmountFunded(deployer);
+```
+
+#### 4. **Provider Access**
+
+**v5:**
+
+```javascript
+fundMe.provider.getBalance();
+```
+
+**v6:**
+
+```javascript
+ethers.provider.getBalance();
+```
+
+#### 5. **BigNumber Operations**
+
+**v5:**
+
+```javascript
+balance.add(gasCost); // Using .add() method
+```
+
+**v6:**
+
+```javascript
+balance + gasCost; // Using native BigInt addition
+```
+
+#### 6. **Zero Value**
+
+**v5:**
+
+```javascript
+assert.equal(endingFundMeBalance, 0);
+```
+
+**v6:**
+
+```javascript
+assert.equal(endingFundMeBalance, 0n); // BigInt notation
+```
+
+---
+
+## Important Configuration Files
+
+### hardhat.config.js
 
 ```javascript
 require("dotenv").config();
 require("hardhat-deploy");
+require("hardhat-deploy-ethers");
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomiclabs/hardhat-etherscan");
+require("hardhat-gas-reporter");
+require("solidity-coverage");
 
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || "";
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 
 module.exports = {
-  defaultNetwork: "hardhat", // Local network by default
-
-  namedAccounts: {
-    deployer: {
-      default: 0, // First account is deployer
-    },
-  },
-
+  defaultNetwork: "hardhat",
   networks: {
-    hardhat: {
-      chainId: 31337, // Local network ID
-    },
     sepolia: {
       url: SEPOLIA_RPC_URL,
       accounts: [PRIVATE_KEY],
       chainId: 11155111,
     },
-    localhost: {
-      url: "http://127.0.0.1:8545/",
-      chainId: 31337,
-    },
   },
-
   solidity: {
     compilers: [{ version: "0.6.18" }, { version: "0.8.18" }],
   },
 };
 ```
 
----
-
-## Deployment Execution
-
-### Workflow Overview
+### .env File
 
 ```
-Development Cycle:
-1. Modify contracts → Compile
-2. Deploy locally with Mock → Test
-3. Modify tests → Deploy → Repeat
-4. Deploy to Sepolia → Final verification
-5. Deploy to Mainnet (when ready)
-```
-
-### Command 1: Compile All Contracts
-
-```bash
-npx hardhat compile
-```
-
-**Output Example:**
-
-```
-Compiling 1 file with 0.8.18
-Successfully compiled 3 files with 0.8.18
-```
-
-**Compiled MockV3Aggregator:**
-
-![MockV3Aggregator Compiled](./img/mock_helper_hardhat_config/compiled_MockV3Aggregator.png)
-
-The image shows the successful compilation results in the artifacts folder:
-
-- `MockV3Aggregator.json` contains the full ABI and bytecode
-- `MockV3Aggregator.dbg.json` contains debug information
-- Both files are needed for deployment
-
-**What's Verified:**
-
-- ✅ All contract syntax is correct
-- ✅ Chainlink imports resolve successfully
-- ✅ ABI and bytecode generated in artifacts/
-- ✅ No compilation errors
-
-**Generated Artifacts:**
-
-```
-artifacts/
-└── @chainlink/contracts/src/v0.8/mocks/
-    └── MockV3Aggregator.sol/
-        ├── MockV3Aggregator.json       # Full ABI + bytecode
-        └── MockV3Aggregator.dbg.json   # Debug info
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
+PRIVATE_KEY=0xyour_private_key_here
+ETHERSCAN_API_KEY=your_api_key
 ```
 
 ---
 
-### Command 2: Deploy Only Mock (Tag Filter)
+## Contract Modifications
 
-```bash
-npx hardhat deploy --tags mocks
+### FundMe.sol - Key Change
+
+The fund function was updated to allow multiple contributions:
+
+```solidity
+// Before: Overwrites previous amount
+addressToAmountFunded[msg.sender] = msg.value;
+
+// After: Accumulates contributions
+addressToAmountFunded[msg.sender] += msg.value;
 ```
 
-**Deployment Output:**
-
-![Deploy Mocks Success](./img/mock_helper_hardhat_config/tag_mocks_deployed.png)
-
-**Console Output Breakdown:**
-
-```
-Local network detected! Deploying mocks ...
-deploying "MockV3Aggregator" (tx: 0x26b424b5b779c469c96412e00aef2d934b1219d9be29070c8d440996f522186):
-  ... deployed at 0x5FbDB2315678afecb367f032d93f642f6418c with 694799 gas
-Mocks deployed!
-----------------------------------------------
-```
-
-**What's Verified:**
-
-- ✅ Tag system works: only "mocks" scripts execute
-- ✅ Mock successfully deploys to local Hardhat network
-- ✅ Contract address: `0x5FbD...` (now available for use)
-- ✅ Mock now returns: **ETH/USD = $2000 (fixed)**
-- ✅ Gas consumed: 694799 (local testing, no real cost)
-
-**Deployment Record Created:**
-
-```
-deployments/hardhat/MockV3Aggregator.json
-{
-  "address": "0x5FbDB2315678afecb367f032d93f642f6418c",
-  "abi": [...],
-  "args": [8, 200000000000],
-  "receipt": {...},
-  "transactionHash": "0x26b424b5b779c469c96412e00aef2d934b1219d9be29070c8d440996f522186"
-}
-```
+This enables funders to contribute multiple times instead of overwriting previous amounts.
 
 ---
 
-### Command 3: Complete Deployment (All Tags)
+## Summary
 
-```bash
-npx hardhat deploy
-```
+### What Was Accomplished
 
-**Output Example:**
+1. ✅ Created comprehensive unit tests for FundMe contract
+2. ✅ Tested constructor, fund, and withdraw functions
+3. ✅ Tested withdraw functionality with multiple funders
+4. ✅ Verified owner-only access control with permission tests
+5. ✅ Achieved near-complete code coverage (100% statements, functions, and lines)
+6. ✅ Migrated from ethers v5 to v6 with proper API updates
+7. ✅ Replaced deprecated Waffle with @nomicfoundation/hardhat-chai-matchers
+8. ✅ Implemented Arrange-Act-Assert testing pattern
+9. ✅ Added Hardhat console logging for debugging
 
-```
-Local network detected! Deploying mocks ...
-deploying "MockV3Aggregator" (tx: 0x26b424b5b779c469c96412e00aef2d934b1219d9be29070c8d440996f522186):
-  ... deployed at 0x5FbDB2315678afecb367f032d93f642f6418c with 694799 gas
-Mocks deployed!
-----------------------------------------------
+### Test Results
 
-deploying "FundMe" (tx: 0x473c5282606ecfe8f5348db71c3ec02547c2e114d9bdd3497a720ac887542cd7):
-  ... deployed at 0xe7f1725E7734cE288F8367e1Bb143E90bb3F0512 with 2833 gas
----------------------------------------------
-```
+- **Total Tests:** 7
+- **Passed:** 7 ✅
+- **Failed:** 0
+- **Execution Time:** ~500ms
+- **Gas Usage:** Optimized and measured
 
-**Complete Verification:**
+### Test Coverage Summary
 
-- ✅ Step 1: MockV3Aggregator deployed at `0x5FbD...`
+| Category                    | Status           |
+| --------------------------- | ---------------- |
+| Constructor                 | ✅ Full Coverage |
+| Fund Function               | ✅ Full Coverage |
+| Withdraw - Single Funder    | ✅ Full Coverage |
+| Withdraw - Multiple Funders | ✅ Full Coverage |
+| Owner Permission            | ✅ Full Coverage |
+| Error Handling              | ✅ Full Coverage |
+| State Management            | ✅ Full Coverage |
 
-  - Set to return: **$2000 per ETH** (fixed, for testing)
-  - Ready to provide prices to FundMe
+### Best Practices Applied
 
-- ✅ Step 2: FundMe deployed at `0xe7f1...`
+- Modular test structure with nested describe blocks
+- Setup/teardown using beforeEach hooks
+- Clear separation of Arrange-Act-Assert phases
+- Comprehensive error handling and revert message testing
+- Gas cost accounting in transaction validations
+- Proper use of fixtures for contract deployment
+- Multiple account testing with `.connect()` method
+- Security validation of access control modifiers
+- Console logging for contract behavior observation
+- Nearly complete code coverage verification
 
-  - Receives Mock address as constructor param
-  - Now configured to use Mock for price queries
-  - `fund()` function will call Mock oracle
+### Testing Overview
 
-- ✅ Execution Order: Correct (00→01)
-  - Mock deployed first, address available
-  - FundMe deployed second, uses Mock address
+The test suite follows this pattern:
 
-**Deployment Timeline:**
+**For each test:**
 
-```
-Time 0ms:   00-deploy-mocks.js starts
-Time 50ms:  MockV3Aggregator deployed at 0x5FbD...
-Time 100ms: 01-deploy-fund-me.js starts
-Time 150ms: Gets Mock address via deployments.get()
-Time 200ms: FundMe deployed at 0xe7f1...
-Time 250ms: Both contracts ready to use
-```
+1. `beforeEach()` deploys fresh contracts - constructor runs automatically
+2. Test functions call contract methods - `fundMe.fund()`, `fundMe.withdraw()`, etc.
+3. Assertions verify results - `assert.equal()`, `expect().to.be.revertedWith()`
+4. Next test triggers `beforeEach()` again with fresh contracts
 
-**Created Records:**
-
-```
-deployments/hardhat/
-├── MockV3Aggregator.json
-└── FundMe.json
-```
-
----
-
-### Command 4: Deploy to Sepolia Testnet
-
-```bash
-npx hardhat deploy --network sepolia
-```
-
-**Execution Flow:**
-
-```
-00-deploy-mocks.js:
-  network.name = "sepolia"
-  developmentChains.includes("sepolia") = false
-  → SKIPPED (no Mock deployment)
-
-01-deploy-fund-me.js:
-  network.name = "sepolia"
-  developmentChains.includes("sepolia") = false
-  → Enter else block
-  → chainId = 11155111
-  → networkConfig[11155111]["ethUsdPriceFeed"]
-  → Returns real Chainlink address: 0x694AA1769357215DE4FAC081bf1f309aDC325306
-  → Deploy FundMe with real oracle address
-```
-
-**Key Difference from Local:**
-
-- Mock oracle NOT deployed (saves gas)
-- FundMe uses real Chainlink oracle
-- Prices are live market data (not fixed $2000)
+**Contract interactions only happen in `it()` blocks**, not during deployment. The constructor executes automatically during `deployments.fixture()` in the beforeEach phase, setting up initial contract state. Then test cases call functions through the contract instance and verify results.
 
 ---
 
-## Local vs Testnet Comparison
-
-### Price Data
-
-```
-Local (Hardhat)        vs    Sepolia Testnet
-─────────────────           ─────────────────
-Mock Price: $2000      vs    Real Price: Live
-Fixed (static)         vs    Dynamic (updates)
-Controlled by test     vs    From Chainlink node
-Instant response       vs    Network dependent
-```
-
-### Deployment Speed
-
-```
-Local              vs    Testnet
-──────                  ────────
-⚡ Milliseconds   vs    🐢 30+ seconds
-Instant feedback  vs    Long wait
-Retry in seconds  vs    Retry in minutes
-```
-
-### Network Stability
-
-```
-Local                vs    Testnet
-─────                    ────────
-🟢 100% Stable    vs    🟡 Occasional issues
-Never fails       vs    Timeouts possible
-Predictable       vs    Unpredictable
-```
-
-### Cost
-
-```
-Local              vs    Testnet
-──────                  ────────
-💚 Free          vs    💰 Sepolia ETH
-No gas           vs    Real gas spent
-Unlimited        vs    Limited faucet
-```
-
----
-
-## Advanced Usage
-
-### Testing Different Price Scenarios
-
-Edit `INITIAL_ANSWER` to test various market conditions:
-
-```javascript
-// Test normal market
-const INITIAL_ANSWER = 200000000000; // ETH = $2000
-
-// Test bull market
-const INITIAL_ANSWER = 500000000000; // ETH = $5000
-
-// Test bear market
-const INITIAL_ANSWER = 50000000000; // ETH = $500
-
-// Test minimum funding threshold
-const INITIAL_ANSWER = 5000000000; // ETH = $50
-
-// Test extreme crash
-const INITIAL_ANSWER = 100000000; // ETH = $1
-```
-
-After changing `INITIAL_ANSWER`:
-
-1. Run `npx hardhat deploy` again
-2. Mock redeploys with new price
-3. All subsequent tests use new price
-
-### Switching Between Networks
-
-```bash
-# Deploy to local (default)
-npx hardhat deploy
-
-# Deploy to Sepolia
-npx hardhat deploy --network sepolia
-
-# Deploy to Arbitrum (if configured)
-npx hardhat deploy --network arbitrumSepolia
-
-# Testnet with specific tags
-npx hardhat deploy --network sepolia --tags fundme
-```
-
----
-
-## Command Reference
-
-| Command                                | Purpose                    | Output                     |
-| -------------------------------------- | -------------------------- | -------------------------- |
-| `npx hardhat compile`                  | Compile all contracts      | Generates artifacts/       |
-| `npx hardhat deploy`                   | Deploy all scripts locally | Deploys Mock + FundMe      |
-| `npx hardhat deploy --tags mocks`      | Deploy only Mock           | Deploys only Mock          |
-| `npx hardhat deploy --tags fundme`     | Deploy only FundMe         | Deploys only FundMe        |
-| `npx hardhat deploy --network sepolia` | Deploy to Sepolia          | Uses real Chainlink        |
-| `npx hardhat node`                     | Start local node           | Runs local Hardhat network |
-| `npx hardhat test`                     | Run tests                  | Executes test suite        |
-
----
-
-## Deployment Success Checklist
-
-After running `npx hardhat deploy`, verify:
-
-### ✅ Console Output
-
-```
-[✓] "Local network detected! Deploying mocks ..."
-[✓] "MockV3Aggregator" shows deployed at 0x...
-[✓] "Mocks deployed!"
-[✓] "FundMe" shows deployed at 0x...
-```
-
-### ✅ Deployment Records
-
-```bash
-ls deployments/hardhat/
-# Should show:
-# - MockV3Aggregator.json
-# - FundMe.json
-```
-
-### ✅ Record Contents
-
-Each JSON file contains:
-
-```json
-{
-  "address": "0x...",
-  "abi": [...],
-  "args": [...],
-  "transactionHash": "0x...",
-  "receipt": {...}
-}
-```
-
-### ✅ Logic Verification
-
-- Mock deploys first, FundMe second ✓
-- FundMe receives Mock address as parameter ✓
-- Mock configured to return $2000 ✓
-- Local network uses Mock, Sepolia uses real oracle ✓
-
----
-
-## Development Workflow Summary
-
-```
-1. Write/modify contracts
-2. Run: npx hardhat compile
-   └─ Verify no syntax errors
-3. Run: npx hardhat deploy
-   └─ Deploy Mock locally
-   └─ Deploy FundMe with Mock
-4. Run: npx hardhat test
-   └─ Test with $2000/ETH price
-5. If needed: Change INITIAL_ANSWER
-   └─ Rerun deployment
-   └─ Test different price scenarios
-6. Run: npx hardhat deploy --network sepolia
-   └─ Deploy to Sepolia with real Chainlink
-   └─ Verify testnet deployment
-7. (Mainnet when ready)
-   └─ Same script, different network
-```
-
----
-
-## Key Takeaways
-
-1. **Mock oracles enable rapid local development** - Deploy in milliseconds, test instantly
-2. **Same code works everywhere** - Deploy script handles Mock vs real oracle automatically
-3. **Complete control over test conditions** - Set any ETH/USD price for comprehensive testing
-4. **Zero cost local testing** - No test tokens needed for local iteration
-5. **Professional pattern** - Industry standard used by major DeFi projects
-6. **Smooth transition to mainnet** - Tested locally, verified on testnet, confident on mainnet
-
----
-
-## Next Steps
-
-1. ✅ Complete local testing with Mock
-2. ✅ Iterate on contract logic
-3. ✅ Test edge cases with custom prices
-4. ✅ Deploy to Sepolia for final verification
-5. ✅ Verify integration with real Chainlink
-6. ✅ Deploy to mainnet (when production-ready)
-
----
-
-## Resources
-
-- [Hardhat Documentation](https://hardhat.org/docs)
-- [Hardhat-Deploy GitHub](https://github.com/wighawag/hardhat-deploy)
-- [Chainlink Data Feeds](https://docs.chain.link/data-feeds)
-- [Ethers.js V5 Documentation](https://docs.ethers.org/v5/)
-
----
-
-**Note:** This is an educational project. Always test thoroughly on testnet before mainnet deployment. Never use real private keys in version control.
+**End of Document**
