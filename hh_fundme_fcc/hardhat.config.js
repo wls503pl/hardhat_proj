@@ -1,8 +1,10 @@
 require("dotenv").config();
 require("hardhat-deploy");
+require("hardhat-deploy-ethers");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
+require("@nomicfoundation/hardhat-chai-matchers");
 
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || "";
 const ARBITRUM_SEPOLIA_RPC_URL = process.env.ARBITRUM_SEPOLIA_RPC_URL || "";

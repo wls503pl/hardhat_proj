@@ -46,7 +46,7 @@ contract FundMe {
             "Didn't send enough USD ..."
         ); // at list $50
         funders.push(msg.sender);
-        addressToAmountFunded[msg.sender] = msg.value;
+        addressToAmountFunded[msg.sender] += msg.value;
     }
 
     /** Modifier */
@@ -95,13 +95,5 @@ contract FundMe {
         (bool callSuccess /*bytes memory dataReturned*/, ) = payable(msg.sender)
             .call{value: address(this).balance}("");
         require(callSuccess, "Call failed ...");
-    }
-
-    receive() external payable {
-        fund();
-    }
-
-    fallback() external payable {
-        fund();
     }
 }
