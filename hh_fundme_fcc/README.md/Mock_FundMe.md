@@ -679,7 +679,7 @@ Running `npx hardhat coverage` generates a detailed report showing which parts o
 
 After implementing all test cases (constructor, fund, withdraw with single funder, withdraw with multiple funders, and owner permission), the contract achieves near-complete code coverage:
 
-![Code Coverage Report](./img/almost_full_coverage.png)
+![Code Coverage Report](../img/UnitTest_FundMe/almost_full_coverage.png)
 
 **Coverage achieved:**
 

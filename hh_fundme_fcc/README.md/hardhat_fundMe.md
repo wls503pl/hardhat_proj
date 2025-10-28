@@ -99,7 +99,7 @@ npx hardhat compile
 
 Make sure your `solidity` version in `hardhat.config.js` matches or is higher than the contract pragma version.
 
-![Chainlink import error resolved](./img/chainlink_import_error.png)
+![Chainlink import error resolved](../img/chainlink_import_error.png)
 
 ---
 
@@ -186,7 +186,7 @@ npx hardhat
 
 You should see a `deploy` task in the available tasks list.
 
-![Hardhat deploy task available](./img/hardhat_deploy.png)
+![Hardhat deploy task available](../img/hardhat_deploy.png)
 
 ---
 
@@ -231,7 +231,7 @@ Think of them as a team:
 }
 ```
 
-![Dependency structure in package.json](./img/hardhat_deploy_ethers_alalis.png)
+![Dependency structure in package.json](../img/hardhat_deploy_ethers_alalis.png)
 
 ---
 
@@ -296,7 +296,7 @@ npx hardhat deploy
 
 All scripts in the `deploy/` directory will execute in order.
 
-![Deploy script execution](./img/hardhat_deploy_defaultFunc.png)
+![Deploy script execution](../img/hardhat_deploy_defaultFunc.png)
 
 ---
 
@@ -324,7 +324,7 @@ module.exports = {
 };
 ```
 
-![Named accounts configuration](./img/hardhat_config_accounts.png)
+![Named accounts configuration](../img/hardhat_config_accounts.png)
 
 **In your deploy script:**
 

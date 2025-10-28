@@ -478,7 +478,7 @@ VSCode allows you to debug tests by setting breakpoints and inspecting variables
 
 Click on the line number in VSCode to set a breakpoint. A red dot will appear:
 
-![VSCode Breakpoint](https://via.placeholder.com/600x300?text=vscode_breakpoint.png)
+![VSCode Breakpoint](../img/Debug_with_Breakpoint/vscode_breakpoint.png)
 
 ### Step 2: Run Tests with Debugger
 
@@ -490,19 +490,19 @@ npx hardhat test
 
 The execution will pause at your breakpoint:
 
-![Stop at Breakpoint](https://via.placeholder.com/600x300?text=stopAt_breakpoint.png)
+![Stop at Breakpoint](../img/Debug_with_Breakpoint/stopAt_breakpoint.png)
 
 ### Step 3: Inspect Variables in Debug Console
 
 In the debug console, type the variable name to inspect its contents. For example, type `transactionReceipt` to see transaction details:
 
-![Debug Console](https://via.placeholder.com/600x300?text=debug_console.png)
+![Debug Console](../img/Debug_with_Breakpoint/debug_console.png)
 
 ### Step 4: Find Gas Information
 
 Look for gas-related fields in the transactionReceipt object. You'll see `gasUsed` and `gasPrice` (both are BigNumber types):
 
-![Transaction Receipt Info](https://via.placeholder.com/600x300?text=transactionReceipt_info.png)
+![Transaction Receipt Info](../img/Debug_with_Breakpoint/transactionReceipt_info.png)
 
 ### Calculating Gas Cost
 
