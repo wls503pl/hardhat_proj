@@ -470,6 +470,53 @@ npx hardhat coverage
 
 ---
 
+## Debugging with Breakpoints
+
+VSCode allows you to debug tests by setting breakpoints and inspecting variables during execution.
+
+### Step 1: Set Breakpoints in VSCode
+
+Click on the line number in VSCode to set a breakpoint. A red dot will appear:
+
+![VSCode Breakpoint](https://via.placeholder.com/600x300?text=vscode_breakpoint.png)
+
+### Step 2: Run Tests with Debugger
+
+In the terminal, switch to your project directory and run:
+
+```bash
+npx hardhat test
+```
+
+The execution will pause at your breakpoint:
+
+![Stop at Breakpoint](https://via.placeholder.com/600x300?text=stopAt_breakpoint.png)
+
+### Step 3: Inspect Variables in Debug Console
+
+In the debug console, type the variable name to inspect its contents. For example, type `transactionReceipt` to see transaction details:
+
+![Debug Console](https://via.placeholder.com/600x300?text=debug_console.png)
+
+### Step 4: Find Gas Information
+
+Look for gas-related fields in the transactionReceipt object. You'll see `gasUsed` and `gasPrice` (both are BigNumber types):
+
+![Transaction Receipt Info](https://via.placeholder.com/600x300?text=transactionReceipt_info.png)
+
+### Calculating Gas Cost
+
+Gas cost is calculated by multiplying gas used by gas price per unit:
+
+```javascript
+const gasCost = transactionReceipt.gasUsed * transactionReceipt.gasPrice;
+// Example: 50,000 gas × 20 gwei = total gas cost in wei
+```
+
+This value represents the actual ETH paid for the transaction execution.
+
+---
+
 ## Code Coverage
 
 ### Coverage Metrics Explained
