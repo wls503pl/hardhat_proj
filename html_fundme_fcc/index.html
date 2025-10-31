@@ -1,25 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FundMe dApp</title>
-  </head>
-  <body>
-    Hello, Metamask
-    <script>
-      async function connect() {
-        if (typeof window.ethereum !== "undefined") {
-          await window.ethereum.request({
-            method: "eth_requestAccounts",
-          });
-          document.getElementById("connectButton").innerHTML = "Connected!";
-        } else {
-          document.getElementById("connectButton").innerHTML =
-            "Please Install Metamask.";
-        }
-      }
-    </script>
-    <button id="connectButton" onclick="connect()">Connect Wallet</button>
-  </body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>FundMe dApp</title>
+    </head>
+    <body>
+        Hello, Metamask
+        <script src="./index.js" type="module"></script>
+        <button id="connectButton">Connect Wallet</button>
+        <button id="fundButton">Fund</button>
+    </body>
 </html>
