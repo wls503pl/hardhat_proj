@@ -39,6 +39,11 @@ In VSCode, create an `index.html` file. You can use the built-in snippet by typi
         <script src="./index.js" type="module"></script>
         <button id="connectButton">Connect Wallet</button>
         <button id="fundButton">Fund</button>
+        <button id="balanceButton">getBalance</button>
+        <button id="withdrawButton">withdraw</button>
+        <!-- form -->
+        <label for="fund">ETH Amount</label>
+        <input id="ethAmount" placeholder="> 0.006" />
     </body>
 </html>
 ```
@@ -49,7 +54,14 @@ In VSCode, create an `index.html` file. You can use the built-in snippet by typi
 <script src="./index.js" type="module"></script>
 ```
 
-![HTML Structure](img/html_js/html_structure.png)
+**New Features Added:**
+
+-   Balance button to query contract balance
+-   Withdraw button to withdraw funds
+-   Input field for user-specified ETH amount
+
+![HTML Structure](img/html_is/html_structure.png)
+![Add Input Label](img/transaction_onWeb/addInputLabel.png)
 
 ### 2. Install Live Server Extension
 
@@ -84,36 +96,112 @@ This will display available URLs:
 Create an `index.js` file with the connect function and button event listeners:
 
 ```javascript
+//import { ethers } from "./ethers-6.7.esm.min.js";
+//import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers.js/6.7.0/ethers.esm.min.js";
+import * as ethers from "./ethers-6.7.esm.min.js";
+import { abi, contractAddress } from "./constants.js";
+
+const connectButton = document.getElementById("connectButton");
+const fundButton = document.getElementById("fundButton");
+const balanceButton = document.getElementById("balanceButton");
+const withdrawButton = document.getElementById("withdrawButton");
+connectButton.onclick = connect;
+fundButton.onclick = fund;
+balanceButton.onclick = getBalance;
+withdrawButton.onclick = withdraw;
+
+console.log(ethers);
+
 async function connect() {
     if (typeof window.ethereum !== "undefined") {
         await window.ethereum.request({
             method: "eth_requestAccounts",
         });
-        document.getElementById("connectButton").innerHTML = "Connected!";
+        connectButton.innerHTML = "Connected!";
     } else {
-        document.getElementById("connectButton").innerHTML =
-            "Please Install Metamask.";
+        connectButton.innerHTML = "Please Install Metamask.";
+    }
+}
+
+async function getBalance() {
+    if (typeof window.ethereum != "undefined") {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const balance = await provider.getBalance(contractAddress);
+        console.log(ethers.formatEther(balance));
     }
 }
 
 async function fund(ethAmount) {
+    ethAmount = document.getElementById("ethAmount").value;
     console.log(`Funding with ${ethAmount}...`);
-
     if (typeof window.ethereum !== "undefined") {
         /*
-         * Sending transactions requires:
-         * - Blockchain connection provider
-         * - Signer (user with sufficient gas)
-         * - Contract interaction (ABI and address)
+         * What we need to send a transaction:
+         * provider: connection to the blockchain
+         * signer: someone's wallet with some gas
+         * contract that we are interacting with: need ABI & address
          */
+        // BrowserProvider(ether-v6) receives the HTTP endpoint and imports it into ethers.
+        // Here, we find the HTTP endpoint from Metamask and use it as the provider.
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        // Since the provider is connected to Metamask, the signer can be obtained directly.
+        // To be precise, it refers to the account on Metamask. If it's account1, then account1 is the signer.
+        const signer = await provider.getSigner();
+        //console.log(signer);
+        // Create a contract object
+        const contract = new ethers.Contract(contractAddress, abi, signer);
+
+        // Create transaction
+        try {
+            const transactionResponse = await contract.fund({
+                value: ethers.parseEther(ethAmount),
+            });
+            // listen for the tx to be mined
+            await listenForTransactionMine(transactionResponse, provider);
+            console.log("Done!");
+        } catch (error) {
+            console.error("Transaction failed:", error);
+        }
     }
 }
 
-const connectButton = document.getElementById("connectButton");
-const fundButton = document.getElementById("fundButton");
+function listenForTransactionMine(transactionResponse, provider) {
+    console.log(`Mining ${transactionResponse.hash} ...`);
+    /*
+     * Listen for this transaction to finish.
+     * Use provider.once to trigger event only once.
+     * Once "provider.once" sees a transaction hash, it will pass a 'transactionReceipt' parameter to the listener function.
+     * Once 'transactionResponse' completes, 'transactionReceipt' is obtained.
+     */
 
-connectButton.onclick = connect;
-fundButton.onclick = fund;
+    // Use Promise, it will execute when the listener finishes listening.
+    // Once the listener has finished listening, it runs "resolve" and this Promise is only resolved when the `transactionResponse` is triggered.
+    // if a timeout of a certain type occurs, it chooses to reject the request using "reject".
+    return new Promise((resolve, reject) => {
+        provider.once(transactionResponse.hash, (transactionReceipt) => {
+            console.log(
+                `Completed with ${transactionReceipt.confirmations} confirmations.`
+            );
+            resolve();
+        });
+    });
+}
+
+// withdraw
+async function withdraw() {
+    if (typeof window.ethereum != "undefined") {
+        console.log("Withdrawing ...");
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, abi, signer);
+        try {
+            const transactionResponse = await contract.withdraw();
+            await listenForTransactionMine(transactionResponse, provider);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+}
 ```
 
 ### 5. Check MetaMask Installation
@@ -223,17 +311,58 @@ After confirming the correct directory, reload the webpage as needed:
 ```html
 <button id="connectButton">Connect Wallet</button>
 <button id="fundButton">Fund</button>
+<button id="balanceButton">getBalance</button>
+<button id="withdrawButton">withdraw</button>
 ```
 
 ```javascript
 const connectButton = document.getElementById("connectButton");
 const fundButton = document.getElementById("fundButton");
+const balanceButton = document.getElementById("balanceButton");
+const withdrawButton = document.getElementById("withdrawButton");
 
 connectButton.onclick = connect;
 fundButton.onclick = fund;
+balanceButton.onclick = getBalance;
+withdrawButton.onclick = withdraw;
 ```
 
 ![Buttons Errors](img/html_js2/buttons_errors.png)
+
+### ⚠️ Pitfall 6: Chain ID 31337 Conflict with GoChain
+
+**Issue:** MetaMask hardcodes Chain ID 31337 to GoChain Testnet, which uses GO tokens instead of ETH for gas. This prevents transactions from being sent even with imported Hardhat accounts.
+
+![GoChain Problem](img/transaction_onWeb/GoChian.png)
+
+**Error Message:** `insufficient funds for gas * price * value`
+
+![No Funds Error](img/transaction_onWeb/noFundsError.png)
+
+**Root Cause:**
+
+-   Hardhat's default Chain ID is 31337
+-   GoChain network also uses Chain ID 31337
+-   MetaMask hardcoded this mapping, forcing the network to be identified as GoChain
+-   Even though Hardhat accounts have 10,000 ETH, they display as GO tokens in MetaMask
+
+![GO Token in MetaMask](img/transaction_onWeb/goToken_inMetamask.png)
+
+**Solution:** Use Sepolia testnet instead of local Hardhat:
+
+1. Deploy your contract to Sepolia
+2. Update `constants.js` with the Sepolia contract address:
+
+```javascript
+export const contractAddress = "0x39D556fA7fD8741F318c89F1FfaAdD7BcEf8290A";
+```
+
+![Contract Deployed on Sepolia](img/transaction_onWeb/contract_deployed_onSepolia.png)
+
+3. Switch MetaMask to Sepolia network
+4. Refresh the page and test your dApp
+
+![Transaction Request on Sepolia](img/transaction_onWeb/transaction_request.png)
 
 ## Features Implemented
 
@@ -243,7 +372,12 @@ fundButton.onclick = fund;
 ✅ Real-time button state update  
 ✅ Error handling  
 ✅ Ethers.js library integration  
-✅ Fund function framework
+✅ Fund function with transaction confirmation  
+✅ Balance query functionality  
+✅ Withdraw functionality  
+✅ User-input ETH amount selection  
+✅ Transaction mining listener  
+✅ Sepolia testnet support
 
 ## Running the Application
 
@@ -257,19 +391,30 @@ fundButton.onclick = fund;
 
 3. Open your browser and navigate to one of the provided URLs (e.g., `http://192.168.50.180:8080`)
 
-4. Click the "Connect Wallet" button
+4. Ensure MetaMask is set to Sepolia network
 
-5. Approve the connection in the MetaMask popup
+5. Click the "Connect Wallet" button
 
-6. Button text will update to "Connected!" upon successful connection
+6. Approve the connection in the MetaMask popup
+
+7. Enter an ETH amount (e.g., 0.006)
+
+8. Click "Fund" to send a transaction
+
+9. Confirm the transaction in MetaMask
+
+10. Monitor the console for transaction confirmation
+
+![Withdraw Feature](img/transaction_onWeb/withdraw.png)
 
 ## Next Steps
 
--   Integrate ethers.js provider and signer for transaction handling
--   Implement fund() function with smart contract interactions
--   Add wallet balance display
--   Build complete transaction functionality
--   Consider upgrading to ReactJS/NextJS for more advanced UI
+-   Add real-time balance display on the UI
+-   Build a transaction history interface
+-   Add input validation for ETH amounts
+-   Upgrade to React framework for improved UI
+-   Deploy to mainnet
+-   Add additional features (staking, governance, etc.)
 
 ---
 
@@ -326,7 +471,7 @@ export const abi = [
     // ... ABI content ...
 ];
 
-export const contractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+export const contractAddress = "0x39D556fA7fD8741F318c89F1FfaAdD7BcEf8290A";
 ```
 
 #### How to Get the ABI?
@@ -339,15 +484,15 @@ Open that file, find the `"abi"` field, and copy its complete content into `cons
 
 #### How to Get the Contract Address?
 
-When you run a local Hardhat node, the contract is automatically deployed. Open another terminal window and run:
+When you deploy your contract to Sepolia testnet, record the deployment address from the output logs:
 
 ```bash
-npx hardhat node
+npx hardhat deploy --network sepolia
 ```
 
-When the node starts, it will output the address of the deployed contract. Record this address and add it to `constants.js`:
+The contract address will be displayed in the console. Add it to `constants.js`:
 
-![Get Contract Deployed Address](img/transaction_onWeb/get_contract_deployed_address.png)
+![Get Contract Deployed Address](img/transaction_onWeb/contract_deployed_onSepolia.png)
 
 In `index.js`, import these constants:
 
@@ -356,13 +501,13 @@ import * as ethers from "./ethers-6.7.esm.min.js";
 import { abi, contractAddress } from "./constants.js";
 ```
 
-### Step 2: Implement the Fund Function
+### Step 2: Implement the Fund Function with User Input
 
-Here is the complete `fund()` function implementation:
+Here is the complete `fund()` function implementation with user-specified ETH amount:
 
 ```javascript
 async function fund(ethAmount) {
-    ethAmount = "0.01";
+    ethAmount = document.getElementById("ethAmount").value;
     console.log(`Funding with ${ethAmount}...`);
 
     if (typeof window.ethereum !== "undefined") {
@@ -387,11 +532,9 @@ async function fund(ethAmount) {
             const transactionResponse = await contract.fund({
                 value: ethers.parseEther(ethAmount),
             });
-            console.log(`Transaction sent: ${transactionResponse.hash}`);
-
-            // Wait for transaction confirmation (1 block confirmation)
-            await transactionResponse.wait(1);
-            console.log("Transaction confirmed!");
+            // listen for the tx to be mined
+            await listenForTransactionMine(transactionResponse, provider);
+            console.log("Done!");
         } catch (error) {
             console.error("Transaction failed:", error);
         }
@@ -405,69 +548,107 @@ async function fund(ethAmount) {
 -   `ethers.parseEther()` converts human-readable ETH amounts to wei
 -   `contract.fund()` calls the fund function on the smart contract
 -   Use try-catch to handle potential errors
+-   User can now specify the ETH amount via input field
 
-### Step 3: Configure Hardhat Localhost Network in MetaMask
+### Step 3: Implement Transaction Mining Listener
 
-To allow MetaMask to connect to your local Hardhat node, you need to add a custom network:
+The `listenForTransactionMine()` function listens for the transaction to be confirmed on the blockchain:
 
-1. Open MetaMask and click the menu icon (three horizontal lines) in the top right
-2. Select **Networks** → **Add a custom network**
-3. Fill in the following information:
+```javascript
+function listenForTransactionMine(transactionResponse, provider) {
+    console.log(`Mining ${transactionResponse.hash} ...`);
 
-| Field           | Value                 |
-| --------------- | --------------------- |
-| Network name    | Hardhat-Localhost     |
-| Default RPC URL | http://127.0.0.1:8545 |
-| Chain ID        | 31337                 |
-| Currency symbol | ETH                   |
-
-![Hardhat Localhost Config](img/transaction_onWeb/hardhat_localhost_config.png)
-
-After saving the network, switch to the Hardhat-Localhost network:
-
-![Switch to Hardhat Localhost](img/transaction_onWeb/switchTo_hardhat_localhost.png)
-
-**Important Note:** The currency symbol should be set to `ETH` (the native coin), not `GO`. This is because the native currency of the Hardhat network is ETH, which is used to pay gas fees. The GO tokens in your account are ERC-20 standard tokens and cannot be used to pay gas fees.
-
-### Step 4: Import Hardhat's Pre-funded Accounts
-
-The local Hardhat node provides multiple pre-funded accounts, each with 10,000 ETH for testing. Import Account #0 to MetaMask:
-
-**Account #0 Information:**
-
-```
-Address: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
-Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-Balance: 10,000 ETH
+    return new Promise((resolve, reject) => {
+        provider.once(transactionResponse.hash, (transactionReceipt) => {
+            console.log(
+                `Completed with ${transactionReceipt.confirmations} confirmations.`
+            );
+            resolve();
+        });
+    });
+}
 ```
 
-#### Importing Account via Private Key
+**How it works:**
 
-In MetaMask:
+-   `provider.once()` listens for a one-time event
+-   When the transaction is mined, it receives the transaction receipt
+-   Displays the number of confirmations
+-   Resolves the Promise when complete
 
-1. Click the account avatar in the top right
-2. Select **Import Account**
-3. Choose **Private Key** as the import method
-4. Paste the private key from above
-5. Click **Import**
+### Step 4: Implement Get Balance Function
 
-![Import Account by Private Key](img/transaction_onWeb/importAccount_byPrivateKey.png)
+Query the contract's balance:
 
-After successful import, you'll see the account has a large ETH balance (displayed as GO symbol, which is set in the network configuration):
+```javascript
+async function getBalance() {
+    if (typeof window.ethereum != "undefined") {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const balance = await provider.getBalance(contractAddress);
+        console.log(ethers.formatEther(balance));
+    }
+}
+```
 
-![Account Imported](img/transaction_onWeb/account_imported.png)
+**Features:**
 
-**Note:** You can also use JSON file import if preferred. The JSON file contains encrypted private key information.
+-   Queries the balance of the contract address
+-   Converts wei to ETH using `ethers.formatEther()`
+-   Logs the result to console
 
-### Step 5: Test Transaction Functionality
+### Step 5: Implement Withdraw Function
+
+Allow contract owner to withdraw funds:
+
+```javascript
+async function withdraw() {
+    if (typeof window.ethereum != "undefined") {
+        console.log("Withdrawing ...");
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, abi, signer);
+        try {
+            const transactionResponse = await contract.withdraw();
+            await listenForTransactionMine(transactionResponse, provider);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+}
+```
+
+**Features:**
+
+-   Calls the withdraw() function on the smart contract
+-   Uses the same transaction mining listener
+-   Only the contract owner can successfully call this function
+
+### Step 6: Update Smart Contract Minimum USD Value
+
+In your Solidity contract, adjust the minimum funding amount:
+
+```solidity
+uint256 public constant MINIMUM_USD = 5 * 1e16; // Reduced from 50 * 1e18
+```
+
+This allows for easier testing with smaller amounts.
+
+### Step 7: Configure Sepolia Network in MetaMask
+
+To allow MetaMask to connect to Sepolia testnet, MetaMask has built-in Sepolia support. Simply:
+
+1. Open MetaMask
+2. Click on the network dropdown
+3. Select **Sepolia Testnet**
+4. Get test ETH from: https://www.sepoliafaucet.com
+
+![Sepolia Network Selection](img/transaction_onWeb/switchTo_hardhat_localhost.png)
+
+### Step 8: Test Transaction Functionality
 
 Now everything is ready to test the complete transaction flow:
 
-1. Make sure your local Hardhat node is running:
-
-    ```bash
-    npx hardhat node
-    ```
+1. Ensure MetaMask is set to **Sepolia network**
 
 2. Start the HTTP server:
 
@@ -475,17 +656,28 @@ Now everything is ready to test the complete transaction flow:
     npx http-server -c-1 --cors
     ```
 
-3. Open your application in the browser and switch to the Hardhat-Localhost network
+3. Open your application in the browser
 
 4. Click the **Connect Wallet** button to connect your wallet
 
-5. Click the **Fund** button to send a transaction
+5. Enter an ETH amount in the input field (e.g., 0.006)
 
-6. MetaMask will pop up a transaction confirmation window showing the transaction details:
+6. Click the **Fund** button to send a transaction
+
+7. MetaMask will pop up a transaction confirmation window showing the transaction details:
 
 ![Transaction Confirmation](img/transaction_onWeb/transaction_confirmation.png)
 
-7. After confirming the transaction, you can see the transaction record in the Hardhat node terminal:
+8. After confirming the transaction, the console will show:
+
+    - Mining progress
+    - Transaction hash
+    - Confirmation count
+    - "Done!" message
+
+9. Click **getBalance** to query the contract balance
+
+10. Click **withdraw** to withdraw funds (only owner can call this)
 
 ![Transaction Record](img/transaction_onWeb/transaction_record.png)
 
@@ -499,8 +691,9 @@ Now everything is ready to test the complete transaction flow:
 
 **Solution:**
 
--   Import Hardhat's pre-funded account (see Step 4 above)
--   Or use a script to transfer ETH from the default account to your account
+-   Get test ETH from Sepolia faucet: https://www.sepoliafaucet.com
+-   Ensure you're on the correct Sepolia network
+-   Wait for the faucet transaction to confirm
 
 ### ⚠️ Issue 2: Contract Runner Does Not Support Sending Transactions
 
@@ -512,31 +705,31 @@ Now everything is ready to test the complete transaction flow:
 
 ### ⚠️ Issue 3: MetaMask Network Configuration Error
 
-**Problem:** MetaMask cannot connect to the Hardhat node.
+**Problem:** MetaMask cannot connect to the specified network.
 
 **Checklist:**
 
--   Is the RPC URL correct: `http://127.0.0.1:8545`?
--   Is the Chain ID set to 31337?
--   Is the Hardhat node running?
--   The network symbol can be any name, but ETH is recommended
+-   Is the network correctly selected in MetaMask?
+-   Is the RPC URL correct for Sepolia?
+-   Is the Chain ID correct (11155111 for Sepolia)?
+
+### ⚠️ Issue 4: Transaction Fails with "Only Owner" Error
+
+**Error Message:** Transaction reverts with access control error.
+
+**Cause:** Only the contract owner can call certain functions like `withdraw()`.
+
+**Solution:** Use the account that deployed the contract to call withdraw.
 
 ## Project Accomplishments Summary
 
 ✅ Complete smart contract deployment setup  
-✅ MetaMask network configuration  
-✅ Frontend wallet connection functionality  
-✅ Transaction signing and sending  
+✅ MetaMask wallet connection functionality  
+✅ Frontend transaction signing and sending  
 ✅ Transaction confirmation waiting mechanism  
+✅ Balance query functionality  
+✅ Withdraw functionality with owner verification  
+✅ User-input ETH amount selection  
 ✅ Error handling and logging  
-✅ Local testing environment
-
-## Future Improvement Directions
-
--   Add real-time balance display
--   Implement withdraw() functionality
--   Build getBalance query interface
--   Add transaction history tracking
--   Upgrade to React framework for improved UI
--   Deploy to test networks (e.g., Sepolia)
--   Final deployment to mainnet
+✅ Sepolia testnet support  
+✅ Production-ready testing environment
