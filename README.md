@@ -1,22 +1,22 @@
 # Hardhat Learning Projects
 
-A collection of Solidity smart contract projects built with Hardhat, designed for learning blockchain development.
+A collection of Solidity smart contract projects built with Hardhat, designed for learning blockchain development. From contract development to full-stack dApp integration.
 
 **Author:** Peile Wu  
 **Email:** peile.wu.1990@gmail.com  
-**Last Updated:** October 29, 2025
+**Last Updated:** October 31, 2025
 
 ---
 
 ## Overview
 
-This repository contains educational Hardhat projects exploring different aspects of smart contract development. Each project is self-contained with comprehensive documentation organized in the `README.md/` directory.
+This repository contains educational Hardhat projects exploring different aspects of smart contract development and web3 integration. Each project is self-contained with comprehensive documentation organized in the `README.md/` directory.
 
 ---
 
 ## Project 1: Hardhat_SimpleStorage (hh_ss_fcc/)
 
-A foundational project demonstrating the complete development workflow with full TypeScript support:
+A foundational project demonstrating the complete development workflow with full TypeScript support.
 
 **Core Features:**
 
@@ -38,7 +38,7 @@ A foundational project demonstrating the complete development workflow with full
 
 ## Project 2: Hardhat_FundMe (hh_fundme_fcc/)
 
-A DeFi-focused project demonstrating professional smart contract development with real-world patterns:
+A DeFi-focused project demonstrating professional smart contract development with real-world patterns.
 
 **Core Features:**
 
@@ -93,6 +93,57 @@ hh_fundme_fcc/
 
 ---
 
+## Project 3: HTML_FundMe (html_fundme_fcc/)
+
+A full-stack dApp frontend connecting the FundMe smart contract to a web interface using HTML, JavaScript, and MetaMask integration.
+
+**Core Features:**
+
+- MetaMask wallet connection and detection
+- Direct transaction signing via browser wallet
+- Real-time Sepolia testnet interaction
+- User-friendly interface with multiple functions
+- Transaction confirmation monitoring
+- Error handling and user feedback
+- Ethers.js v6 integration for blockchain communication
+
+**Key Concepts:**
+
+- **Web3 Integration:** BrowserProvider for MetaMask connection
+- **Transaction Management:** User-initiated fund and withdrawal operations
+- **Wallet Interaction:** Seamless MetaMask pop-up confirmation flow
+- **State Management:** Real-time balance queries and transaction status
+- **Frontend Best Practices:** Event listeners, error handling, async/await patterns
+
+**Features Implemented:**
+
+✅ MetaMask detection and auto-detection  
+✅ Wallet connection with button control  
+✅ Fund contract with custom ETH amount  
+✅ Query contract balance  
+✅ Withdraw funds (owner only)  
+✅ Transaction mining listener  
+✅ Error handling and logging  
+✅ Sepolia testnet support
+
+**Documentation** (in `README.md/` directory):
+
+- [frontend_fundMe.md](./README.md/frontend_fundMe.md) - Complete frontend setup guide, transaction implementation, and common pitfalls
+
+**Project Structure:**
+
+```
+html_fundme_fcc/
+├── index.html               # Main HTML interface
+├── index.js                 # JavaScript functionality
+├── constants.js             # Contract ABI and address
+├── ethers-6.7.esm.min.js   # Ethers.js library
+├── package.json
+└── frontend_fundMe.md       # Comprehensive documentation
+```
+
+---
+
 ## Quick Start
 
 ### Project 1: SimpleStorage
@@ -138,6 +189,22 @@ npx hardhat run scripts/fund.js --network localhost
 npx hardhat run scripts/withdraw.js --network localhost
 ```
 
+### Project 3: HTML FundMe
+
+```bash
+cd html_fundme_fcc
+
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Start HTTP server
+npx http-server -c-1 --cors
+
+# Open browser to provided URL (e.g., http://192.168.x.x:8080)
+# Connect MetaMask to Sepolia testnet
+# Interact with the FundMe contract through the web interface
+```
+
 ---
 
 ## Essential Commands
@@ -160,6 +227,14 @@ npx hardhat run scripts/withdraw.js --network localhost
 | `npx hardhat run scripts/fund.js`                | Execute fund script          |
 | `npx hardhat node`                               | Start local development node |
 | `npx hardhat verify --network sepolia <address>` | Verify on Etherscan          |
+
+### Frontend Development
+
+| Command                | Purpose                                            |
+| ---------------------- | -------------------------------------------------- |
+| `npx http-server -c-1` | Start local HTTP server                            |
+| Hard Refresh           | Clear browser cache (Ctrl+Shift+R)                 |
+| Live Server            | VSCode Live Server extension for real-time preview |
 
 ### Network Configuration
 
@@ -184,6 +259,43 @@ COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
 ```
 
 ⚠️ **Never commit `.env`. Use test wallets with minimal funds only.**
+
+---
+
+## Learning Path
+
+### Recommended Progression
+
+1. **Start with SimpleStorage** (Beginner - 2-3 hours)
+
+   - Understand basic contract compilation and deployment
+   - Learn fundamental testing patterns with Mocha/Chai
+   - Get comfortable with Hardhat CLI and configuration
+   - Deploy and verify contracts on Etherscan
+
+2. **Progress to FundMe** (Intermediate - 4-6 hours)
+
+   - Multi-contract interactions and library usage
+   - Real oracle integration with Chainlink price feeds
+   - Professional deployment workflows with hardhat-deploy
+   - Dual testing strategy (unit + staging tests)
+   - Advanced gas optimization techniques
+
+3. **Complete with HTML FundMe** (Intermediate - 2-3 hours)
+
+   - Connect smart contracts to web frontend
+   - MetaMask wallet integration and transaction signing
+   - User interface design for Web3 applications
+   - Transaction confirmation and error handling
+   - Real testnet interaction from the browser
+
+4. **Apply Knowledge** for Real Projects
+
+   - Combine all three components into full-stack dApps
+   - Deploy contracts with testing and verification
+   - Build user-friendly frontends with Web3 integration
+   - Monitor gas usage and optimize for production
+   - Test thoroughly across multiple networks
 
 ---
 
@@ -224,6 +336,35 @@ COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
   - Access control patterns
   - Multi-signature scenarios
 
+### Project 3: HTML FundMe
+
+- **Frontend Development:**
+
+  - HTML/JavaScript structure for Web3 applications
+  - MetaMask detection and connection flow
+  - Event listeners for user interactions
+  - Async/await patterns for blockchain calls
+
+- **Web3 Integration:**
+
+  - BrowserProvider for wallet connection
+  - Contract interaction from the frontend
+  - Transaction signing and confirmation
+  - Balance queries and state updates
+
+- **User Experience:**
+
+  - Real-time feedback and error messages
+  - Transaction mining confirmation
+  - User-controlled parameters (ETH amounts)
+  - Network validation and switching
+
+- **Full-Stack Development:**
+  - Backend (smart contracts) + Frontend integration
+  - End-to-end dApp workflow
+  - Production-ready error handling
+  - Best practices for Web3 UX
+
 ---
 
 ## Why Testing Matters
@@ -242,32 +383,6 @@ Refer to [testForFundMe.md](./README.md/testForFundMe.md) for detailed testing p
 
 ---
 
-## Project Progression
-
-### Recommended Learning Path
-
-1. **Start with SimpleStorage** if you're new to Hardhat
-
-   - Understand basic contract compilation and deployment
-   - Learn fundamental testing patterns
-   - Get comfortable with hardhat commands
-
-2. **Progress to FundMe** for advanced concepts
-
-   - Multi-contract interactions
-   - Oracle integration and price feeds
-   - Professional deployment workflows
-   - Production-ready testing strategies
-   - Gas optimization techniques
-
-3. **Combine knowledge** for real projects
-   - Apply testing best practices
-   - Optimize gas consumption
-   - Deploy across multiple networks
-   - Verify contracts on Etherscan
-
----
-
 ## Common Errors & Solutions
 
 ### SimpleStorage
@@ -283,17 +398,28 @@ Refer to [testForFundMe.md](./README.md/testForFundMe.md) for detailed testing p
 - **Price feed not available:** Check MockV3Aggregator deployment in deploy/00-deploy-mocks.js
 - **Staging tests fail:** Ensure testnet ETH balance in PRIVATE_KEY wallet
 
+### HTML FundMe
+
+- **MetaMask not popping up:** Attach connect function to button click, not page load
+- **Insufficient funds error:** Get test ETH from Sepolia faucet (https://www.sepoliafaucet.com)
+- **Chain ID 31337 conflict:** Use Sepolia network instead of Hardhat localhost
+- **HTTP server directory error:** Run `npx http-server -c-1 --cors` from project root
+- **Browser cache issues:** Hard refresh (Ctrl+Shift+R) to clear cache
+
 ---
 
 ## Resources
 
 - [Hardhat Documentation](https://hardhat.org/docs)
 - [Solidity Documentation](https://docs.soliditylang.org/)
+- [Ethers.js Documentation](https://docs.ethers.org/v6/)
+- [MetaMask Documentation](https://docs.metamask.io/)
 - [Sepolia Etherscan](https://sepolia.etherscan.io/)
 - [rekt.news](https://rekt.news/) - Learn from security failures
 - [Chainlist](https://chainlist.org/) - Network configurations
 - [Chainlink Docs](https://docs.chain.link/data-feeds) - Oracle integration
 - [OpenZeppelin Docs](https://docs.openzeppelin.com/) - Security best practices
+- [Sepolia Faucet](https://www.sepoliafaucet.com) - Get test ETH
 
 ---
 
@@ -314,23 +440,14 @@ Refer to [testForFundMe.md](./README.md/testForFundMe.md) for detailed testing p
 - **Gas Savings:** 45-60% optimization
 - **Estimated Learning Time:** 4-6 hours
 
----
+### Project 3: HTML FundMe
 
-## Next Steps
-
-After completing both projects, consider exploring:
-
-- Multi-signature wallets (advanced access control)
-- Token contracts (ERC20, ERC721)
-- Decentralized exchanges (DEX mechanics)
-- Staking and yield farming contracts
-- NFT marketplaces
-- Governance tokens and DAOs
-
-Each project builds on core concepts learned here. Start simple, test thoroughly, optimize systematically.
-
-Happy learning! 🚀
+- **HTML Pages:** 1
+- **JavaScript Functions:** 7 (connect, fund, withdraw, getBalance, etc.)
+- **Testnet Support:** Sepolia
+- **Features:** Full dApp interaction flow
+- **Estimated Learning Time:** 2-3 hours
 
 ---
 
-**Note:** These are educational projects. Always test thoroughly on testnet before any mainnet deployment. Use test wallets and minimal funds for development and testing
+**Note:** These are educational projects. Always test thoroughly on testnet before any mainnet deployment. Use test wallets and minimal funds for development and testing.

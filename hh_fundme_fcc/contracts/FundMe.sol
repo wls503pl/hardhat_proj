@@ -14,7 +14,8 @@ contract FundMe {
     /** Type Declarations */
     using PriceConverter for uint256;
 
-    uint256 public constant MINIMUM_USD = 50 * 1e18; // The conversion basis is wei
+    // The conversion basis is wei, decrease it for limitis ETH in Account
+    uint256 public constant MINIMUM_USD = 0.05 * 1e18;
 
     /** State Variables */
     address[] private s_funders;
