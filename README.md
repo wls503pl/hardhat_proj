@@ -266,14 +266,14 @@ COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
 
 ### Recommended Progression
 
-1. **Start with SimpleStorage** (Beginner - 2-3 hours)
+1. **Start with SimpleStorage**
 
    - Understand basic contract compilation and deployment
    - Learn fundamental testing patterns with Mocha/Chai
    - Get comfortable with Hardhat CLI and configuration
    - Deploy and verify contracts on Etherscan
 
-2. **Progress to FundMe** (Intermediate - 4-6 hours)
+2. **Progress to FundMe**
 
    - Multi-contract interactions and library usage
    - Real oracle integration with Chainlink price feeds
@@ -281,7 +281,7 @@ COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
    - Dual testing strategy (unit + staging tests)
    - Advanced gas optimization techniques
 
-3. **Complete with HTML FundMe** (Intermediate - 2-3 hours)
+3. **Complete with HTML FundMe**
 
    - Connect smart contracts to web frontend
    - MetaMask wallet integration and transaction signing
@@ -422,32 +422,3 @@ Refer to [testForFundMe.md](./README.md/testForFundMe.md) for detailed testing p
 - [Sepolia Faucet](https://www.sepoliafaucet.com) - Get test ETH
 
 ---
-
-## Project Statistics
-
-### Project 1: SimpleStorage
-
-- **Contracts:** 1
-- **Test Cases:** 7
-- **Code Coverage:** >90%
-- **Estimated Learning Time:** 2-3 hours
-
-### Project 2: FundMe
-
-- **Contracts:** 3 (FundMe + PriceConverter + MockV3Aggregator)
-- **Test Cases:** 12+ (unit + staging)
-- **Code Coverage:** 94.74%
-- **Gas Savings:** 45-60% optimization
-- **Estimated Learning Time:** 4-6 hours
-
-### Project 3: HTML FundMe
-
-- **HTML Pages:** 1
-- **JavaScript Functions:** 7 (connect, fund, withdraw, getBalance, etc.)
-- **Testnet Support:** Sepolia
-- **Features:** Full dApp interaction flow
-- **Estimated Learning Time:** 2-3 hours
-
----
-
-**Note:** These are educational projects. Always test thoroughly on testnet before any mainnet deployment. Use test wallets and minimal funds for development and testing.
